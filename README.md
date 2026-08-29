@@ -59,3 +59,11 @@ This is an experimental statistical research tool and does not demonstrate futur
 - Carousel viewports use layout/paint containment.
 - Added a runtime viewport-width check during render and resize.
 - Horizontal movement is restricted to the dedicated carousel viewports.
+
+
+## v10.6
+- Removed carousel arrows and page indicators from the three horizontal histories.
+- Removed the custom carousel transform/drag logic.
+- Latest results, recent jumps and recent directions now use native horizontal touch scrolling directly in their own bounded boxes.
+- Prediction history remains a bounded vertical native scroll area.
+- The page itself remains horizontally locked.
