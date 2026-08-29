@@ -112,11 +112,11 @@ input[type=file]{display:none}
 
 <section class="card"><div class="sectionHead"><h2>¿Por qué esta predicción?</h2></div><div id="explanation" class="details">—</div></section>
 
-<section class="card"><div class="sectionHead"><h2>Historial de predicciones</h2><span class="counter" id="predCounter">0</span></div><div id="predHistory">—</div></section>
+<section class="card"><div class="sectionHead"><h2>Historial de predicciones</h2><span class="counter" id="predCount">0</span></div><div id="predHistory">—</div></section>
 
 <section class="card"><div class="sectionHead"><h2>Rendimiento</h2><select class="select" id="chartWindow"><option value="25">Últimas 25</option><option value="50" selected>Últimas 50</option><option value="100">Últimas 100</option></select></div>
 <div class="statsGrid">
-  <div class="statbox"><span>WIN rate</span><b id="winRate">—</b></div><div class="statbox"><span>Modelo − baseline</span><b id="vsBase">—</b></div><div class="statbox"><span>Dirección</span><b id="dirAcc">—</b></div><div class="statbox"><span>Evaluadas</span><b id="evaluated">0</b></div>
+  <div class="statbox"><span>WIN rate</span><b id="winRate">—</b></div><div class="statbox"><span>Modelo − baseline</span><b id="vsBase">—</b></div><div class="statbox"><span>Dirección</span><b id="dirAcc">—</b></div><div class="statbox"><span>Evaluadas</span><b id="evaluated">0</b></div><div class="statbox"><span>Baseline</span><b id="baseline">—</b></div>
   <div class="statbox"><span>Exact</span><b id="r0">—</b></div><div class="statbox"><span>±3</span><b id="r3">—</b></div><div class="statbox"><span>±5</span><b id="r5">—</b></div><div class="statbox"><span>±9</span><b id="r9">—</b></div>
 </div>
 <canvas id="chart" aria-label="Rendimiento acumulado"></canvas>
@@ -247,7 +247,7 @@ function addSpin(n){
 function exportTxt(){
  const lines=["ROULETTE PATTERN LAB v10.0","SPIN | RESULT | JUMP | DIRECTION | DATE"];
  state.spins.forEach((x,i)=>{const prev=i?state.spins[i-1].result:null;lines.push((i+1)+" | "+x.result+" | "+(prev==null?"":jump(prev,x.result))+" | "+(prev==null?"":dir(prev,x.result))+" | "+x.createdAt)});
- download("roulette-history-v10.txt",lines.join("\\n"),"text/plain");
+ download("roulette-history-v10.txt",lines.join("\n"),"text/plain");
 }
 function backup(){download("roulette-pattern-lab-v10.json",JSON.stringify(state,null,2),"application/json")}
 function download(name,data,type){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([data],{type}));a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
@@ -266,6 +266,7 @@ function drawChart(h){
 }
 
 function render(){
+ try{
  const h=state.spins.map(x=>Number(x.result)),t=transitions(h),p=model(h),bt=backtest(h),tol=Number($("tol").value);
  $("spinCounter").textContent=h.length+" spins";$("count2").textContent=h.length+" spins";$("predCount").textContent=state.predictions.filter(x=>x.prediction).length;$("evaluated").textContent=bt.n;
  $("history").innerHTML=h.slice(-24).map(n=>"<span class='result "+color(n)+"'>"+n+"</span>").join("");
@@ -283,9 +284,10 @@ function render(){
  }else{
    $("target").textContent="—";$("probability").textContent="—";$("signal").textContent="SIN SEÑAL";$("signal").className="signal none";$("jumpPred").textContent="—";$("dirPred").textContent="—";$("zone").textContent=h.length<12?"Necesitamos al menos 12 spins":"—";$("ranking").innerHTML="";$("alerts").innerHTML="<div class='muted'>Con 12 spins empieza el análisis predictivo.</div>";$("explanation").textContent="—";$("patternCount").textContent="0";
  }
- $("r0").textContent=pct(bt.hit[0],bt.n);$("r3").textContent=pct(bt.hit[3],bt.n);$("r5").textContent=pct(bt.hit[5],bt.n);$("r9").textContent=pct(bt.hit[9],bt.n);$("winRate").textContent=pct(bt.hit[tol],bt.n);const base=(2*tol+1)/37;$("baseline").textContent="";$("vsBase").textContent=bt.n?(((bt.hit[tol]/bt.n-base)*100>=0?"+":"")+((bt.hit[tol]/bt.n-base)*100).toFixed(1)+" pp"):"—";$("dirAcc").textContent=pct(bt.dir,bt.n);
+ $("r0").textContent=pct(bt.hit[0],bt.n);$("r3").textContent=pct(bt.hit[3],bt.n);$("r5").textContent=pct(bt.hit[5],bt.n);$("r9").textContent=pct(bt.hit[9],bt.n);$("winRate").textContent=pct(bt.hit[tol],bt.n);const base=(2*tol+1)/37;$("baseline").textContent=(base*100).toFixed(1)+"%";$("vsBase").textContent=bt.n?(((bt.hit[tol]/bt.n-base)*100>=0?"+":"")+((bt.hit[tol]/bt.n-base)*100).toFixed(1)+" pp"):"—";$("dirAcc").textContent=pct(bt.dir,bt.n);
  $("predHistory").innerHTML=state.predictions.filter(x=>x.prediction&&x.actual!=null).slice(-35).reverse().map(x=>{const win=dist(x.prediction.target,x.actual)<=tol;return "<div class='predRow'><b>#"+x.spinIndex+"</b><span>"+x.prediction.target+" → "+x.actual+" · "+dist(x.prediction.target,x.actual)+"p</span><span>"+(x.prediction.predDir||"—")+"</span><b class='"+(win?"win":"loss")+"'>"+(win?"WIN":"LOSS")+"</b></div>"}).join("")||"—";
  drawChart(h);
+ }catch(err){ console.error(err); $("storageStatus").textContent="ERROR: "+err.message; }
 }
 function buildButtons(){
  const box=$("numbers");box.innerHTML="";

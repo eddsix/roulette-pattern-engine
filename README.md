@@ -21,3 +21,11 @@ Self-contained mobile-first web app.
 - TXT and JSON backup/restore.
 
 This is an experimental statistical research tool and does not demonstrate future predictability.
+
+
+## v10.1
+- Fixed the render crash that occurred after adding a spin: the UI referenced missing `predCount` and `baseline` elements.
+- Prediction/statistics rendering now continues after every spin.
+- Baseline percentage is displayed.
+- Added a defensive render error indicator instead of silently failing.
+- All referenced DOM IDs were validated automatically.
