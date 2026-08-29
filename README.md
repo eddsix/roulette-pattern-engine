@@ -21,3 +21,7 @@ The database name remains `RoulettePatternLabV4` so the existing v4/v5 data stor
 
 ## Note
 This is an experimental statistical research tool. It does not prove that roulette outcomes are predictable and does not automate betting.
+
+
+## v6.1 hotfix
+Fixed a runtime error in the UI that stopped rendering after spins were saved. Added a visible saved timestamp and a neutral prior so the 37-pocket distribution is always available once the minimum history is reached.
