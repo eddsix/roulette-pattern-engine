@@ -30,3 +30,9 @@ Pattern recognition is experimental and does not establish future predictability
 - More robust chronological rendering of saved spins.
 - Full-history deletion button with confirmation.
 - Existing IndexedDB name preserved.
+
+
+## v8.2
+- Fixed persistent manual day/night mode restoration after page refresh.
+- Number buttons are created before IndexedDB initialization, so a database problem cannot hide the input controls.
+- Added cache-busting script version to ensure GitHub Pages loads the new JavaScript.
