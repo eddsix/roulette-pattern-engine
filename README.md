@@ -21,3 +21,12 @@ Major upgrade focused on pattern intelligence.
 - Existing IndexedDB name retained: RoulettePatternLabV4.
 
 Pattern recognition is experimental and does not establish future predictability.
+
+
+## v8.1
+- Spanish-only interface.
+- Manual day/night switch with persistent local preference.
+- Button press animation.
+- More robust chronological rendering of saved spins.
+- Full-history deletion button with confirmation.
+- Existing IndexedDB name preserved.
