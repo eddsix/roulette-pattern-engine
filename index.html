@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111827">
+<title>Roulette Pattern Lab v6.0</title>
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+<main class="app">
+<header><div><h1>Roulette Pattern Lab</h1><p>Learning Engine · Pocket Jump + CW/CCW + Patterns · v6.0</p></div><span id="db" class="pill">DB...</span></header>
+
+<section class="card hero">
+<div class="label">PRÓXIMO SPIN</div>
+<div id="target" class="target">—</div>
+<div id="signal" class="signal">NO SIGNAL</div>
+<div id="probability">Probabilidad del target: —</div>
+<div id="jumpPrediction">Salto previsto: —</div>
+<div id="directionPrediction">Dirección prevista: —</div>
+<div id="zone" class="muted">Necesitamos histórico</div>
+</section>
+
+<section class="card">
+<div class="head"><h2>Últimos resultados</h2><strong id="count">0 spins</strong></div>
+<div id="history" class="history"></div>
+</section>
+
+<section class="card">
+<h2>Última transición</h2><div id="lastTransition">—</div>
+<h3>Historial reciente de saltos</h3><div id="jumpHistory" class="horizontal">—</div>
+<h3>Historial reciente de dirección</h3><div id="directionHistory" class="horizontal">—</div>
+</section>
+
+<section class="card">
+<h2>Aprendizaje</h2>
+<div class="miniGrid">
+<div><span>Transiciones</span><b id="transitions">0</b></div>
+<div><span>Patrones activos</span><b id="patterns">0</b></div>
+<div><span>Histórico CW</span><b id="cwRate">—</b></div>
+<div><span>Histórico CCW</span><b id="ccwRate">—</b></div>
+</div>
+<div id="learningDetails" class="details"></div>
+</section>
+
+<section class="card"><h2>Distribución de pockets</h2><div id="ranking" class="ranking">—</div></section>
+
+<section class="card">
+<h2>Estadísticas del modelo</h2>
+<div class="statsGrid">
+<div><span>Predicciones</span><b id="pc">0</b></div>
+<div><span>Exact</span><b id="r0">—</b></div>
+<div><span>±1 pocket</span><b id="r1">—</b></div>
+<div><span>±2 pockets</span><b id="r2">—</b></div>
+<div><span>±3 pockets</span><b id="r3">—</b></div>
+<div><span>±4 pockets</span><b id="r4">—</b></div>
+<div><span>±5 pockets</span><b id="r5">—</b></div>
+<div><span>Dir. correcta</span><b id="dirAcc">—</b></div>
+</div></section>
+
+<section class="card">
+<h2>Nuevo resultado</h2>
+<div id="numbers" class="numbers"></div>
+<div class="actions"><button id="undo">Deshacer</button><button id="txt">TXT histórico</button><button id="json">Backup JSON</button></div>
+<input id="restore" type="file" accept=".json" hidden>
+<button id="restoreBtn" class="secondary">Restaurar backup</button>
+</section>
+
+<section class="card note"><b>Nota estadística</b><p>El modelo aprende únicamente de datos disponibles antes de cada spin. Los porcentajes son métricas empíricas del modelo y no garantizan resultados futuros.</p></section>
+</main>
+<script src="assets/app.js"></script>
+</body>
+</html>
