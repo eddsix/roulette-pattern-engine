@@ -29,3 +29,9 @@ This is an experimental statistical research tool and does not demonstrate futur
 - Baseline percentage is displayed.
 - Added a defensive render error indicator instead of silently failing.
 - All referenced DOM IDs were validated automatically.
+
+
+## v10.2
+- Fixed horizontal scrolling of recent results and jump/direction strips on mobile.
+- Added native horizontal touch scrolling plus a drag fallback.
+- Added mobile overscroll/touch behavior so the strip can be swiped without requiring a scrollbar.
