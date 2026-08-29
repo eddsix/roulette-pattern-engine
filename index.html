@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0b1220">
-<title>Roulette Pattern Lab — v10.3</title>
+<title>Roulette Pattern Lab — v10.4</title>
 <style>
 :root{
  --bg:#f4f6fa;--panel:#fff;--text:#111827;--muted:#667085;--line:#e5e7eb;
@@ -33,19 +33,19 @@ button{cursor:pointer}
 .wheelZone{font-size:12px;color:var(--muted);line-height:1.5}
 .sectionHead{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px}
 .sectionHead h2{font-size:15px;margin:0}.counter{font-weight:800;font-size:13px;color:var(--muted)}
-.history{display:flex;gap:7px;overflow-x:auto;overflow-y:hidden;padding:4px 2px 9px;white-space:nowrap;touch-action:pan-x;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;cursor:grab;min-width:0;max-width:100%;border:1px solid var(--line);border-radius:12px;background:var(--soft)} .history:active{cursor:grabbing}
+.history{display:block;position:relative;overflow:hidden;width:100%;max-width:100%;min-width:0;height:62px;padding:0;border:1px solid var(--line);border-radius:12px;background:var(--soft);touch-action:pan-y}.history-track{display:flex;align-items:center;gap:7px;height:100%;width:max-content;padding:5px 42px 5px 42px;transition:transform .22s ease;will-change:transform}.history .result{flex:0 0 42px}
 .result{flex:0 0 auto;scroll-snap-align:start;min-width:42px;height:42px;border-radius:50%;display:grid;place-items:center;font-weight:850;color:#fff;box-shadow:0 1px 2px #0003}
 .red{background:#d92d20}.black{background:#111827}.green{background:#0f8a61}
 .transitionGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 .statbox{background:var(--soft);border-radius:12px;padding:10px}.statbox span{display:block;color:var(--muted);font-size:10px}.statbox b{font-size:18px}
-.horizontal{display:flex;gap:7px;overflow-x:auto;overflow-y:hidden;margin-top:7px;padding:6px 4px 8px;white-space:nowrap;touch-action:pan-x;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;cursor:grab;min-width:0;max-width:100%;border:1px solid var(--line);border-radius:10px;background:var(--soft)} .horizontal:active{cursor:grabbing}.chip{flex:0 0 auto;scroll-snap-align:start;white-space:nowrap;padding:7px 9px;border:1px solid var(--line);border-radius:10px;font-size:11px;background:var(--panel)}
+.horizontal{display:block;position:relative;overflow:hidden;width:100%;max-width:100%;min-width:0;height:45px;margin-top:7px;padding:0;border:1px solid var(--line);border-radius:10px;background:var(--soft);touch-action:pan-y}.horizontal-track{display:flex;align-items:center;gap:7px;height:100%;width:max-content;padding:4px 40px;transition:transform .22s ease;will-change:transform}.horizontal .chip{flex:0 0 auto}.chip{flex:0 0 auto;scroll-snap-align:start;white-space:nowrap;padding:7px 9px;border:1px solid var(--line);border-radius:10px;font-size:11px;background:var(--panel)}
 .numbers{display:grid;grid-template-columns:repeat(10,1fr);gap:7px}.num{min-height:46px;border:1px solid #d7dce4;border-radius:11px;font-weight:850;color:#fff;transition:transform .11s ease,filter .11s ease,box-shadow .11s ease}.num.red{background:#d92d20}.num.black{background:#111827}.num.green{background:#0f8a61}.num.pressed{transform:scale(.89);filter:brightness(.84);box-shadow:0 2px 7px #0004}
 .actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}.action{flex:1;min-width:120px;min-height:44px;border:1px solid var(--line);border-radius:11px;background:var(--panel);color:var(--text);font-weight:750}.danger{border-color:#f3b3b3;color:#b42318}
 .grid2{display:grid;grid-template-columns:1.15fr .85fr;gap:12px}
 .ranking{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.rank{border:1px solid var(--line);border-radius:12px;padding:9px}.rankTop{display:flex;justify-content:space-between;gap:8px;font-size:12px}.rankNum{font-size:18px;font-weight:900}.rankPct{font-weight:800}.bar{height:6px;margin-top:7px;background:#e9edf3;border-radius:999px;overflow:hidden}.bar i{display:block;height:100%;background:var(--accent)}
 .alert{padding:10px 12px;border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:12px;margin:7px 0;font-size:12px;line-height:1.55;background:var(--soft)}
 .win{color:var(--good);font-weight:850}.loss{color:var(--bad);font-weight:850}#predHistory{max-height:310px;overflow-y:auto;overflow-x:hidden;touch-action:pan-y;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:12px;padding:0 10px;background:var(--soft);min-width:0}
-.predRow{display:grid;grid-template-columns:44px 1fr 80px 62px;gap:7px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);font-size:12px}
+.carouselBtn{position:absolute;z-index:3;top:50%;transform:translateY(-50%);width:30px;height:30px;border:1px solid var(--line);border-radius:50%;background:var(--panel);color:var(--text);box-shadow:0 2px 5px #0002;font-weight:900}.carouselBtn.left{left:6px}.carouselBtn.right{right:6px}.carouselPage{position:absolute;z-index:2;left:50%;bottom:2px;transform:translateX(-50%);font-size:9px;color:var(--muted);pointer-events:none}.predRow{display:grid;grid-template-columns:44px 1fr 80px 62px;gap:7px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);font-size:12px}
 .details{font-size:12px;line-height:1.6}.details div{padding:5px 0;border-bottom:1px solid var(--line)}
 .statsGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.statsGrid .statbox b{font-size:20px}
 canvas{display:block;width:100%;height:210px;margin-top:12px}
@@ -58,7 +58,7 @@ input[type=file]{display:none}
 <body>
 <main class="app">
 <header class="topbar">
-  <div class="brand"><h1>Roulette Pattern Lab</h1><p>Pattern Intelligence Engine · v10.3</p></div>
+  <div class="brand"><h1>Roulette Pattern Lab</h1><p>Pattern Intelligence Engine · v10.4</p></div>
   <div class="toolbar">
     <button class="iconbtn" id="themeBtn" type="button">Modo noche</button>
     <select class="select" id="tol"><option value="1">±1</option><option value="2">±2</option><option value="3" selected>±3</option><option value="4">±4</option><option value="5">±5</option><option value="6">±6</option><option value="7">±7</option><option value="8">±8</option><option value="9">±9</option></select>
@@ -93,7 +93,12 @@ input[type=file]{display:none}
 <div class="grid2">
 <section class="card">
   <div class="sectionHead"><h2>Últimos resultados</h2></div>
-  <div id="history" class="history" aria-label="Últimos resultados"></div>
+  <div class="history" aria-label="Últimos resultados">
+  <button class="carouselBtn left" type="button" id="histPrev">‹</button>
+  <div id="history" class="history-track"></div>
+  <button class="carouselBtn right" type="button" id="histNext">›</button>
+  <span class="carouselPage" id="histPage">1/1</span>
+</div>
 </section>
 <section class="card">
   <div class="sectionHead"><h2>Última transición</h2></div>
@@ -103,8 +108,18 @@ input[type=file]{display:none}
     <div class="statbox"><span>Salto</span><b id="tJump">—</b></div>
     <div class="statbox"><span>Dirección</span><b id="tDir">—</b></div>
   </div>
-  <h3>Saltos recientes</h3><div id="jumpHistory" class="horizontal"></div>
-  <h3>Direcciones recientes</h3><div id="directionHistory" class="horizontal"></div>
+  <h3>Saltos recientes</h3><div class="horizontal">
+  <button class="carouselBtn left" type="button" id="jumpPrev">‹</button>
+  <div id="jumpHistory" class="horizontal-track"></div>
+  <button class="carouselBtn right" type="button" id="jumpNext">›</button>
+  <span class="carouselPage" id="jumpPage">1/1</span>
+</div>
+  <h3>Direcciones recientes</h3><div class="horizontal">
+  <button class="carouselBtn left" type="button" id="dirPrev">‹</button>
+  <div id="directionHistory" class="horizontal-track"></div>
+  <button class="carouselBtn right" type="button" id="dirNext">›</button>
+  <span class="carouselPage" id="dirPage">1/1</span>
+</div>
 </section>
 </div>
 
@@ -268,11 +283,28 @@ function drawChart(h){
 
 
 
+
+const carousels={};
+function setupCarousel(key,viewportId,trackId,prevId,nextId,pageId){
+ const viewport=$(viewportId),track=$(trackId),prev=$(prevId),next=$(nextId),page=$(pageId);
+ let pos=0,startX=0,startPos=0,drag=false;
+ function maxPos(){return Math.max(0,track.scrollWidth-viewport.clientWidth)}
+ function apply(){pos=Math.max(0,Math.min(pos,maxPos()));track.style.transform="translateX("+(-pos)+"px)";page.textContent=(maxPos()?(Math.floor(pos/Math.max(1,viewport.clientWidth*.85))+1):1)+"/"+(maxPos()?Math.ceil(maxPos()/Math.max(1,viewport.clientWidth*.85))+1:1)}
+ prev.onclick=()=>{pos-=viewport.clientWidth*.85;apply()};
+ next.onclick=()=>{pos+=viewport.clientWidth*.85;apply()};
+ viewport.addEventListener("pointerdown",e=>{if(e.pointerType==="mouse"&&e.button!==0)return;drag=true;startX=e.clientX;startPos=pos;viewport.setPointerCapture?.(e.pointerId)});
+ viewport.addEventListener("pointermove",e=>{if(!drag)return;const dx=e.clientX-startX;if(Math.abs(dx)>3)pos=startPos-dx;apply()});
+ ["pointerup","pointercancel","pointerleave"].forEach(ev=>viewport.addEventListener(ev,()=>drag=false));
+ window.addEventListener("resize",apply);
+ carousels[key]={apply};
+ return apply;
+}
+
 function render(){
  try{
  const h=state.spins.map(x=>Number(x.result)),t=transitions(h),p=model(h),bt=backtest(h),tol=Number($("tol").value);
  $("spinCounter").textContent=h.length+" spins";$("count2").textContent=h.length+" spins";$("predCount").textContent=state.predictions.filter(x=>x.prediction).length;$("evaluated").textContent=bt.n;
- $("history").innerHTML=h.slice(-24).map(n=>"<span class='result "+color(n)+"'>"+n+"</span>").join("");
+ $("history").innerHTML=h.slice(-60).map(n=>"<span class="+"'result "+color(n)+"'"+">"+n+"</span>").join("");
  $("lastPocket").textContent=h.length?h.at(-1):"—";
  if(t.length){const x=t.at(-1);$("tFrom").textContent=x.from;$("tTo").textContent=x.to;$("tJump").textContent=(x.j>=0?"+":"")+x.j;$("tDir").textContent=x.d;$("jumpHistory").innerHTML=t.slice(-30).map(x=>"<span class='chip'>"+(x.j>=0?"+":"")+x.j+"</span>").join("");$("directionHistory").innerHTML=t.slice(-30).map(x=>"<span class='chip'>"+x.d+"</span>").join("")}
  else{$("tFrom").textContent="—";$("tTo").textContent="—";$("tJump").textContent="—";$("tDir").textContent="—";$("jumpHistory").innerHTML="";$("directionHistory").innerHTML=""}
@@ -290,6 +322,8 @@ function render(){
  $("r0").textContent=pct(bt.hit[0],bt.n);$("r3").textContent=pct(bt.hit[3],bt.n);$("r5").textContent=pct(bt.hit[5],bt.n);$("r9").textContent=pct(bt.hit[9],bt.n);$("winRate").textContent=pct(bt.hit[tol],bt.n);const base=(2*tol+1)/37;$("baseline").textContent=(base*100).toFixed(1)+"%";$("vsBase").textContent=bt.n?(((bt.hit[tol]/bt.n-base)*100>=0?"+":"")+((bt.hit[tol]/bt.n-base)*100).toFixed(1)+" pp"):"—";$("dirAcc").textContent=pct(bt.dir,bt.n);
  $("predHistory").innerHTML=state.predictions.filter(x=>x.prediction&&x.actual!=null).slice(-35).reverse().map(x=>{const win=dist(x.prediction.target,x.actual)<=tol;return "<div class='predRow'><b>#"+x.spinIndex+"</b><span>"+x.prediction.target+" → "+x.actual+" · "+dist(x.prediction.target,x.actual)+"p</span><span>"+(x.prediction.predDir||"—")+"</span><b class='"+(win?"win":"loss")+"'>"+(win?"WIN":"LOSS")+"</b></div>"}).join("")||"—";
  drawChart(h);
+ $("histPage").textContent="1/1";$("jumpPage").textContent="1/1";$("dirPage").textContent="1/1";
+ Object.values(carousels).forEach(fn=>fn.apply());
  }catch(err){ console.error(err); $("storageStatus").textContent="ERROR: "+err.message; }
 }
 function buildButtons(){
@@ -299,6 +333,9 @@ function buildButtons(){
 load();buildButtons();$("storageStatus").textContent="LOCAL OK";
 $("themeBtn").addEventListener("click",()=>{document.body.classList.toggle("night");const on=document.body.classList.contains("night");localStorage.setItem("roulettePatternLab.theme",on?"night":"day");$("themeBtn").textContent=on?"Modo día":"Modo noche"});
 if(localStorage.getItem("roulettePatternLab.theme")==="night"){document.body.classList.add("night");$("themeBtn").textContent="Modo día"}
+setupCarousel("history","history","history","histPrev","histNext","histPage");
+setupCarousel("jumps","jumpHistory","jumpHistory","jumpPrev","jumpNext","jumpPage");
+setupCarousel("directions","directionHistory","directionHistory","dirPrev","dirNext","dirPage");
 $("tol").addEventListener("change",render);$("chartWindow").addEventListener("change",()=>drawChart(state.spins.map(x=>Number(x.result))));
 $("undo").addEventListener("click",undo);$("txt").addEventListener("click",exportTxt);$("json").addEventListener("click",backup);$("clear").addEventListener("click",clearAll);
 $("restoreBtn").addEventListener("click",()=>$("restore").click());$("restore").addEventListener("change",e=>e.target.files[0]&&restoreFile(e.target.files[0]));

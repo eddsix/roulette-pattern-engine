@@ -42,3 +42,10 @@ This is an experimental statistical research tool and does not demonstrate futur
 - Prediction history is now a bounded vertical swipe box.
 - Removed the custom pointer-drag implementation that interfered with normal mobile scrolling.
 - Added native touch scrolling, momentum scrolling and scroll snapping.
+
+
+## v10.4
+- Rebuilt the three problematic sections as bounded carousel viewports.
+- Latest results, recent jumps and recent directions each have an isolated viewport, native touch/pointer drag and previous/next controls.
+- Prediction history remains a bounded vertical scroll container.
+- Removed dependence on free-flowing horizontal flex overflow for those three areas.
