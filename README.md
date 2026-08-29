@@ -36,3 +36,9 @@ Pattern recognition is experimental and does not establish future predictability
 - Fixed persistent manual day/night mode restoration after page refresh.
 - Number buttons are created before IndexedDB initialization, so a database problem cannot hide the input controls.
 - Added cache-busting script version to ensure GitHub Pages loads the new JavaScript.
+
+
+## v8.3
+- Added a dedicated visible spin counter next to the recent-results section.
+- Added explicit pointer-down press animation for roulette number buttons, designed for mobile touch input.
+- Cache-busted app JavaScript to v8.3.
