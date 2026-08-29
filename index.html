@@ -1,14 +1,304 @@
-<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#111827"><title>Roulette Pattern Lab v8.0</title><link rel="manifest" href="manifest.json"><link rel="stylesheet" href="assets/app.css"></head><body><main class="app">
-<header><div><h1>Roulette Pattern Lab</h1><p>Pattern Intelligence Engine · v8.0</p></div><div class="top"><button id="theme">☾</button><span id="db" class="pill">DB...</span></div></header>
-<section class="card hero"><div class="label">PRÓXIMO SPIN</div><div id="target" class="target">—</div><div id="signal" class="signal">SIN SEÑAL</div><div id="probability">Probabilidad: —</div><div id="jumpPrediction">Salto previsto: —</div><div id="directionPrediction">Dirección: —</div><div id="zone" class="muted">Necesitamos histórico</div></section>
-<section class="card"><div class="head"><h2>Dashboard</h2><select id="tol"><option value="1">±1</option><option value="2">±2</option><option value="3" selected>±3</option><option value="4">±4</option><option value="5">±5</option><option value="6">±6</option><option value="7">±7</option><option value="8">±8</option><option value="9">±9</option></select></div><div class="stats"><div><span>Win rate</span><b id="winRate">—</b></div><div><span>Predicciones</span><b id="predCount">0</b></div><div><span>Modelo vs baseline</span><b id="vsBase">—</b></div><div><span>Dirección</span><b id="dirAcc">—</b></div></div><canvas id="chart"></canvas></section>
-<section class="card"><h2>Patrones activos</h2><div id="alerts">—</div></section>
-<section class="card"><div class="head"><h2>Últimos resultados</h2><strong id="spinCounter">0 spins</strong></div><div id="history" class="history"></div></section>
-<section class="card"><h2>Transiciones</h2><div id="transition">—</div><div id="jumpHistory" class="horizontal">—</div><div id="directionHistory" class="horizontal">—</div></section>
-<section class="card"><h2>Ranking de pockets</h2><div id="ranking" class="ranking"></div></section>
-<section class="card"><h2>¿Por qué esta predicción?</h2><div id="explanation" class="details">—</div></section>
-<section class="card"><h2>Historial de predicciones</h2><div id="predHistory">—</div></section>
-<section class="card"><h2>Backtest walk-forward</h2><div class="stats"><div><span>Exact</span><b id="r0">—</b></div><div><span>±1</span><b id="r1">—</b></div><div><span>±3</span><b id="r3">—</b></div><div><span>±5</span><b id="r5">—</b></div><div><span>±9</span><b id="r9">—</b></div><div><span>Baseline</span><b id="baseline">—</b></div><div><span>Dirección</span><b id="btDir">—</b></div><div><span>Evaluadas</span><b id="evaluated">0</b></div></div></section>
-<section class="card"><h2>Nuevo resultado</h2><div id="numbers" class="numbers"><div id="numbersStatus">Cargando números…</div></div><div class="actions"><button id="undo">Deshacer</button><button id="txt">TXT</button><button id="json">Backup</button></div><button id="clearHistory" class="secondary danger">Borrar historial completo</button><input id="restore" type="file" accept=".json" hidden><button id="restoreBtn" class="secondary">Restaurar backup</button></section>
-<section class="card note"><b>Nota</b><p>El motor detecta regularidades históricas y las evalúa mediante walk-forward. No implica que una ruleta sea predecible.</p></section>
-</main><script src="assets/app.js?v=9.0"></script></body></html>
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b1220">
+<title>Roulette Pattern Lab — v10.0</title>
+<style>
+:root{
+ --bg:#f4f6fa;--panel:#fff;--text:#111827;--muted:#667085;--line:#e5e7eb;
+ --accent:#111827;--soft:#eef2f7;--good:#087f5b;--bad:#c92a2a;--gold:#a86c00;
+}
+*{box-sizing:border-box}html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+body.night{--bg:#0b1220;--panel:#111827;--text:#f3f4f6;--muted:#9ca3af;--line:#263244;--accent:#f3f4f6;--soft:#172033}
+body.night .num{border-color:#334155}
+body.night .bar{background:#273449}
+button,select{font:inherit}
+button{cursor:pointer}
+.app{max-width:1100px;margin:auto;padding:16px 14px 48px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+.brand h1{font-size:23px;line-height:1;margin:0 0 5px}
+.brand p{margin:0;color:var(--muted);font-size:12px}
+.toolbar{display:flex;align-items:center;gap:7px;flex-wrap:wrap;justify-content:flex-end}
+.iconbtn,.select{border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:10px;padding:8px 10px;min-height:38px}
+.dbpill{font-size:11px;padding:6px 8px;border-radius:999px;background:var(--soft);color:var(--muted)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:12px;box-shadow:0 3px 14px #00000008}
+.hero{display:grid;grid-template-columns:1fr auto 1fr;gap:18px;align-items:center;padding:18px}
+.heroLeft,.heroRight{text-align:left}.heroRight{text-align:right}
+.label{font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted)}
+.target{font-size:76px;font-weight:900;line-height:.95;margin:5px 0}
+.signal{font-size:13px;font-weight:850}.signal.high{color:var(--good)}.signal.low{color:var(--gold)}.signal.none{color:var(--muted)}
+.metric{font-size:13px;margin:4px 0}.metric b{font-weight:800}
+.wheelZone{font-size:12px;color:var(--muted);line-height:1.5}
+.sectionHead{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px}
+.sectionHead h2{font-size:15px;margin:0}.counter{font-weight:800;font-size:13px;color:var(--muted)}
+.history{display:flex;gap:7px;overflow:auto;padding:2px 1px 4px}
+.result{min-width:42px;height:42px;border-radius:50%;display:grid;place-items:center;font-weight:850;color:#fff;box-shadow:0 1px 2px #0003}
+.red{background:#d92d20}.black{background:#111827}.green{background:#0f8a61}
+.transitionGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.statbox{background:var(--soft);border-radius:12px;padding:10px}.statbox span{display:block;color:var(--muted);font-size:10px}.statbox b{font-size:18px}
+.horizontal{display:flex;gap:7px;overflow:auto;margin-top:7px}.chip{white-space:nowrap;padding:7px 9px;border:1px solid var(--line);border-radius:10px;font-size:11px;background:var(--panel)}
+.numbers{display:grid;grid-template-columns:repeat(10,1fr);gap:7px}.num{min-height:46px;border:1px solid #d7dce4;border-radius:11px;font-weight:850;color:#fff;transition:transform .11s ease,filter .11s ease,box-shadow .11s ease}.num.red{background:#d92d20}.num.black{background:#111827}.num.green{background:#0f8a61}.num.pressed{transform:scale(.89);filter:brightness(.84);box-shadow:0 2px 7px #0004}
+.actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}.action{flex:1;min-width:120px;min-height:44px;border:1px solid var(--line);border-radius:11px;background:var(--panel);color:var(--text);font-weight:750}.danger{border-color:#f3b3b3;color:#b42318}
+.grid2{display:grid;grid-template-columns:1.15fr .85fr;gap:12px}
+.ranking{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.rank{border:1px solid var(--line);border-radius:12px;padding:9px}.rankTop{display:flex;justify-content:space-between;gap:8px;font-size:12px}.rankNum{font-size:18px;font-weight:900}.rankPct{font-weight:800}.bar{height:6px;margin-top:7px;background:#e9edf3;border-radius:999px;overflow:hidden}.bar i{display:block;height:100%;background:var(--accent)}
+.alert{padding:10px 12px;border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:12px;margin:7px 0;font-size:12px;line-height:1.55;background:var(--soft)}
+.win{color:var(--good);font-weight:850}.loss{color:var(--bad);font-weight:850}
+.predRow{display:grid;grid-template-columns:44px 1fr 80px 62px;gap:7px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);font-size:12px}
+.details{font-size:12px;line-height:1.6}.details div{padding:5px 0;border-bottom:1px solid var(--line)}
+.statsGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.statsGrid .statbox b{font-size:20px}
+canvas{display:block;width:100%;height:210px;margin-top:12px}
+.muted{color:var(--muted);font-size:12px}.note{font-size:12px;color:var(--muted);line-height:1.5}
+input[type=file]{display:none}
+@media(max-width:760px){.hero{grid-template-columns:1fr;text-align:center}.heroLeft,.heroRight{text-align:center}.grid2{grid-template-columns:1fr}.transitionGrid{grid-template-columns:repeat(2,1fr)}.ranking{grid-template-columns:repeat(2,1fr)}.statsGrid{grid-template-columns:repeat(2,1fr)}.numbers{grid-template-columns:repeat(6,1fr)}}
+@media(max-width:430px){.brand h1{font-size:19px}.target{font-size:62px}.numbers{grid-template-columns:repeat(6,1fr);gap:6px}.num{min-height:43px}}
+</style>
+</head>
+<body>
+<main class="app">
+<header class="topbar">
+  <div class="brand"><h1>Roulette Pattern Lab</h1><p>Pattern Intelligence Engine · v10.0</p></div>
+  <div class="toolbar">
+    <button class="iconbtn" id="themeBtn" type="button">Modo noche</button>
+    <select class="select" id="tol"><option value="1">±1</option><option value="2">±2</option><option value="3" selected>±3</option><option value="4">±4</option><option value="5">±5</option><option value="6">±6</option><option value="7">±7</option><option value="8">±8</option><option value="9">±9</option></select>
+    <span class="dbpill" id="storageStatus">LOCAL</span>
+  </div>
+</header>
+
+<section class="card hero">
+  <div class="heroLeft"><div class="label">Próximo spin</div><div class="wheelZone">Último pocket: <b id="lastPocket">—</b></div><div class="wheelZone">Histórico: <b id="spinCounter">0 spins</b></div></div>
+  <div><div id="target" class="target">—</div><div id="signal" class="signal none">SIN SEÑAL</div></div>
+  <div class="heroRight"><div class="metric"><b id="probability">—</b> target</div><div class="metric">Salto previsto: <b id="jumpPred">—</b></div><div class="metric">Dirección: <b id="dirPred">—</b></div><div class="wheelZone">Zona: <b id="zone">—</b></div></div>
+</section>
+
+<section class="card">
+  <div class="sectionHead"><h2>Patrones activos</h2><span id="patternCount" class="counter">0</span></div>
+  <div id="alerts"><div class="muted">Todavía no hay patrones activados.</div></div>
+</section>
+
+<section class="card">
+  <div class="sectionHead"><h2>Nuevo resultado</h2><span id="count2" class="counter">0 spins</span></div>
+  <div id="numbers" class="numbers"></div>
+  <div class="actions">
+    <button class="action" id="undo" type="button">Deshacer</button>
+    <button class="action" id="txt" type="button">Exportar TXT</button>
+    <button class="action" id="json" type="button">Backup JSON</button>
+    <button class="action" id="restoreBtn" type="button">Restaurar JSON</button>
+    <button class="action danger" id="clear" type="button">Borrar histórico</button>
+  </div>
+  <input id="restore" type="file" accept=".json">
+</section>
+
+<div class="grid2">
+<section class="card">
+  <div class="sectionHead"><h2>Últimos resultados</h2></div>
+  <div id="history" class="history"></div>
+</section>
+<section class="card">
+  <div class="sectionHead"><h2>Última transición</h2></div>
+  <div class="transitionGrid">
+    <div class="statbox"><span>Anterior</span><b id="tFrom">—</b></div>
+    <div class="statbox"><span>Actual</span><b id="tTo">—</b></div>
+    <div class="statbox"><span>Salto</span><b id="tJump">—</b></div>
+    <div class="statbox"><span>Dirección</span><b id="tDir">—</b></div>
+  </div>
+  <h3>Saltos recientes</h3><div id="jumpHistory" class="horizontal"></div>
+  <h3>Direcciones recientes</h3><div id="directionHistory" class="horizontal"></div>
+</section>
+</div>
+
+<section class="card"><div class="sectionHead"><h2>Distribución de pockets</h2><span class="counter">37 pockets</span></div><div id="ranking" class="ranking"></div></section>
+
+<section class="card"><div class="sectionHead"><h2>¿Por qué esta predicción?</h2></div><div id="explanation" class="details">—</div></section>
+
+<section class="card"><div class="sectionHead"><h2>Historial de predicciones</h2><span class="counter" id="predCounter">0</span></div><div id="predHistory">—</div></section>
+
+<section class="card"><div class="sectionHead"><h2>Rendimiento</h2><select class="select" id="chartWindow"><option value="25">Últimas 25</option><option value="50" selected>Últimas 50</option><option value="100">Últimas 100</option></select></div>
+<div class="statsGrid">
+  <div class="statbox"><span>WIN rate</span><b id="winRate">—</b></div><div class="statbox"><span>Modelo − baseline</span><b id="vsBase">—</b></div><div class="statbox"><span>Dirección</span><b id="dirAcc">—</b></div><div class="statbox"><span>Evaluadas</span><b id="evaluated">0</b></div>
+  <div class="statbox"><span>Exact</span><b id="r0">—</b></div><div class="statbox"><span>±3</span><b id="r3">—</b></div><div class="statbox"><span>±5</span><b id="r5">—</b></div><div class="statbox"><span>±9</span><b id="r9">—</b></div>
+</div>
+<canvas id="chart" aria-label="Rendimiento acumulado"></canvas>
+</section>
+
+<section class="card"><div class="sectionHead"><h2>Dirección histórica</h2></div><div class="statsGrid"><div class="statbox"><span>CW</span><b id="cw">—</b></div><div class="statbox"><span>CCW</span><b id="ccw">—</b></div><div class="statbox"><span>SAME</span><b id="same">—</b></div><div class="statbox"><span>Total</span><b id="dirTotal">0</b></div></div></section>
+
+<section class="card note"><b>v10.0 · Persistencia y metodología</b><br>
+El histórico se guarda localmente en el navegador y cada spin se añade al dataset. La predicción se calcula antes del siguiente resultado y el backtest usa una ventana walk-forward para evitar utilizar el resultado futuro al generar la predicción.
+</section>
+</main>
+
+<script>
+(function(){
+"use strict";
+const STORE="roulettePatternLab.v10";
+const W=[0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
+const RED=new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
+let state={version:10,spins:[],predictions:[]};
+
+function $(id){return document.getElementById(id)}
+function load(){
+ try{
+   const x=JSON.parse(localStorage.getItem(STORE)||"");
+   if(x&&Array.isArray(x.spins)){state=x}
+   else state={version:10,spins:[],predictions:[]};
+   // One-time migration from the v9 localStorage format, if it exists.
+   if(!state.spins.length){
+     const old=JSON.parse(localStorage.getItem("roulettePatternLab.v9.spins")||"[]");
+     const oldP=JSON.parse(localStorage.getItem("roulettePatternLab.v9.predictions")||"[]");
+     if(Array.isArray(old)&&old.length){state.spins=old.map((x,i)=>({id:i+1,result:Number(x.result),createdAt:x.createdAt||new Date().toISOString()}));state.predictions=Array.isArray(oldP)?oldP:[];save()}
+   }
+ }catch(e){state={version:10,spins:[],predictions:[]}}
+}
+function save(){localStorage.setItem(STORE,JSON.stringify(state));}
+function press(b){b.classList.remove("pressed");void b.offsetWidth;b.classList.add("pressed");setTimeout(()=>b.classList.remove("pressed"),140)}
+function idx(n){return W.indexOf(Number(n))}
+function jump(a,b){let x=(idx(a)<0?0:idx(a));let y=idx(b);let d=(y-x+37)%37;return d>18?d-37:d}
+function dist(a,b){return Math.abs(jump(a,b))}
+function dir(a,b){const j=jump(a,b);return j>0?"CW":j<0?"CCW":"SAME"}
+function neigh(n,r){const i=idx(n);return Array.from({length:2*r+1},(_,k)=>W[(i-r+k+37)%37])}
+function transitions(h){const a=[];for(let i=1;i<h.length;i++)a.push({from:h[i-1],to:h[i],j:jump(h[i-1],h[i]),d:dir(h[i-1],h[i])});return a}
+function seqMatches(h,len){
+ const key=h.slice(-len).join(",");
+ const next=[];
+ for(let i=0;i+len<h.length;i++)if(h.slice(i,i+len).join(",")===key)next.push(h[i+len]);
+ return next;
+}
+function seqPatternSignals(h){
+ const out=[];
+ for(let len=2;len<=Math.min(10,h.length-1);len++){
+   const next=seqMatches(h,len);
+   if(next.length>=2)out.push({type:"sequence",len,occ:next.length,key:h.slice(-len).join(" → "),next});
+ }
+ return out.sort((a,b)=>b.len-a.len||b.occ-a.occ);
+}
+function jumpSignals(h){
+ const t=transitions(h),j=t.map(x=>x.j),out=[];
+ for(let len=2;len<=Math.min(7,j.length-1);len++){
+   const key=j.slice(-len).join(",");
+   const next=[];
+   for(let i=0;i+len<j.length;i++)if(j.slice(i,i+len).join(",")===key)next.push(j[i+len]);
+   if(next.length>=2)out.push({type:"jump",len,occ:next.length,key,next});
+ }
+ return out.sort((a,b)=>b.len-a.len||b.occ-a.occ);
+}
+function jointSignals(h){
+ const t=transitions(h),sig=t.map(x=>x.j+":"+x.d),out=[];
+ for(let len=2;len<=Math.min(7,sig.length-1);len++){
+   const key=sig.slice(-len).join(" | "),next=[];
+   for(let i=0;i+len<sig.length;i++)if(sig.slice(i,i+len).join(" | ")===key)next.push(h[i+len]);
+   if(next.length>=2)out.push({type:"joint",len,occ:next.length,key,next});
+ }
+ return out.sort((a,b)=>b.len-a.len||b.occ-a.occ);
+}
+function model(h){
+ if(h.length<12)return null;
+ const score=Array(37).fill(0),evidence=[];
+ const s=seqPatternSignals(h),j=jumpSignals(h),g=jointSignals(h);
+ for(const p of s.slice(0,5)){
+   const c=Array(37).fill(0);p.next.forEach(n=>c[idx(n)]++);
+   for(let n=0;n<37;n++)score[n]+=(c[n]/p.occ)*(2+p.len);
+   evidence.push({title:"Secuencia repetida · "+p.len+" pockets",text:p.key+" → "+p.next.join(", "),samples:p.occ});
+ }
+ for(const p of g.slice(0,4)){
+   const c=Array(37).fill(0);p.next.forEach(n=>c[idx(n)]++);
+   for(let n=0;n<37;n++)score[n]+=(c[n]/p.occ)*5;
+   evidence.push({title:"Patrón salto + dirección · "+p.len,text:p.key,samples:p.occ});
+ }
+ for(const p of j.slice(0,4)){
+   const c=Array(37).fill(0);p.next.forEach(q=>c[idx(W[(idx(h.at(-1))+q+37)%37])]++);
+   for(let n=0;n<37;n++)score[n]+=(c[n]/p.occ)*3.5;
+   evidence.push({title:"Patrón de saltos · "+p.len,text:p.key,samples:p.occ});
+ }
+ const row=Array(37).fill(0);for(let i=0;i<h.length-1;i++)if(h[i]===h.at(-1))row[idx(h[i+1])]++;
+ const rowTotal=row.reduce((a,b)=>a+b,0)+37;
+ for(let n=0;n<37;n++)score[n]+=((row[n]+1)/rowTotal)*2;
+ evidence.push({title:"Transición desde "+h.at(-1),text:"matriz histórica",samples:row.reduce((a,b)=>a+b,0)});
+ const lastD=dir(h.at(-2),h.at(-1)),dc={CW:0.5,CCW:0.5,SAME:0.5};
+ const t=transitions(h);for(let i=0;i<t.length-1;i++)if(t[i].d===lastD)dc[t[i+1].d]++;
+ const dt=dc.CW+dc.CCW+dc.SAME;
+ for(let n=0;n<37;n++){const q=jump(h.at(-1),W[n])>0?"CW":jump(h.at(-1),W[n])<0?"CCW":"SAME";score[n]+=(dc[q]/dt)*2}
+ evidence.push({title:"Dirección después de "+lastD,text:"condicional histórica",samples:Math.max(0,t.filter(x=>x.d===lastD).length-1)});
+ for(let i=Math.max(0,h.length-80);i<h.length-1;i++)score[idx(h[i+1])]+=Math.pow(.985,h.length-2-i)*.08;
+ const rank=score.map((v,n)=>({n,v})).sort((a,b)=>b.v-a.v),total=rank.reduce((a,x)=>a+x.v,0),r=rank.map(x=>({...x,p:x.v/total})),best=r[0];
+ const expected=r.reduce((a,x)=>a+jump(h.at(-1),x.n)*x.p,0);
+ const cw=r.filter(x=>jump(h.at(-1),x.n)>0).reduce((a,x)=>a+x.p,0),ccw=r.filter(x=>jump(h.at(-1),x.n)<0).reduce((a,x)=>a+x.p,0);
+ return {target:best.n,prob:best.p,ranking:r.slice(0,12),expected,predDir:cw>=ccw?"CW":"CCW",cw,ccw,evidence,seq:s,jp:j,jn:g};
+}
+function backtest(h){
+ const o={n:0,hit:Array(10).fill(0),dir:0};
+ for(let i=12;i<h.length;i++){
+   const p=model(h.slice(0,i));if(!p)continue;
+   o.n++;for(let r=0;r<=9;r++)if(dist(p.target,h[i])<=r)o.hit[r]++;
+   if(dir(h[i-1],h[i])===p.predDir)o.dir++;
+ }
+ return o;
+}
+function pct(n,d){return d?(100*n/d).toFixed(1)+"%":"—"}
+function color(n){return n===0?"green":RED.has(Number(n))?"red":"black"}
+
+function addSpin(n){
+ n=Number(n);const h=state.spins.map(x=>Number(x.result)),p=model(h),now=new Date().toISOString();
+ state.predictions.push({id:state.predictions.length+1,spinIndex:h.length+1,previous:h.at(-1)??null,prediction:p,actual:n,createdAt:now});
+ state.spins.push({id:state.spins.length+1,result:n,createdAt:now});
+ save();render();
+}
+function exportTxt(){
+ const lines=["ROULETTE PATTERN LAB v10.0","SPIN | RESULT | JUMP | DIRECTION | DATE"];
+ state.spins.forEach((x,i)=>{const prev=i?state.spins[i-1].result:null;lines.push((i+1)+" | "+x.result+" | "+(prev==null?"":jump(prev,x.result))+" | "+(prev==null?"":dir(prev,x.result))+" | "+x.createdAt)});
+ download("roulette-history-v10.txt",lines.join("\\n"),"text/plain");
+}
+function backup(){download("roulette-pattern-lab-v10.json",JSON.stringify(state,null,2),"application/json")}
+function download(name,data,type){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([data],{type}));a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+function clearAll(){if(!confirm("¿Borrar todo el histórico y las predicciones? Esta acción no se puede deshacer."))return;state={version:10,spins:[],predictions:[]};save();render()}
+function undo(){if(!state.spins.length)return;state.spins.pop();state.predictions.pop();save();render()}
+function restoreFile(file){file.text().then(txt=>{const x=JSON.parse(txt);if(!x||!Array.isArray(x.spins))throw Error("Backup inválido");if(!confirm("Esto reemplazará el histórico actual. ¿Continuar?"))return;state={version:10,spins:x.spins,predictions:Array.isArray(x.predictions)?x.predictions:[]};save();render();}).catch(e=>alert(e.message))}
+
+function drawChart(h){
+ const c=$("chart"),dpr=Math.max(1,window.devicePixelRatio||1),w=c.clientWidth||320,hh=c.clientHeight||210;c.width=w*dpr;c.height=hh*dpr;
+ const ctx=c.getContext("2d");ctx.scale(dpr,dpr);ctx.clearRect(0,0,w,hh);
+ const n=Math.max(10,Number($("chartWindow").value));const vals=[];for(let i=12;i<h.length;i++){const b=backtest(h.slice(0,i));vals.push(b.n?b.hit[Number($("tol").value)]/b.n*100:0)}const v=vals.slice(-n);if(!v.length){ctx.fillStyle=getComputedStyle(document.body).color;ctx.font="12px system-ui";ctx.fillText("Aún no hay suficientes predicciones evaluadas.",12,24);return}
+ const pad={l:34,r:10,t:12,b:24},cw=w-pad.l-pad.r,ch=hh-pad.t-pad.b;
+ ctx.strokeStyle=getComputedStyle(document.body).getPropertyValue("--line");ctx.lineWidth=1;for(let k=0;k<=4;k++){const y=pad.t+ch*k/4;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke()}
+ ctx.fillStyle=getComputedStyle(document.body).getPropertyValue("--muted");ctx.font="10px system-ui";for(let k=0;k<=4;k++){const val=100-(100*k/4);ctx.fillText(val.toFixed(0)+"%",3,pad.t+ch*k/4+3)}
+ ctx.strokeStyle=getComputedStyle(document.body).getPropertyValue("--accent");ctx.lineWidth=2;ctx.beginPath();v.forEach((y,i)=>{const x=pad.l+(v.length===1?cw/2:i*cw/(v.length-1));const yy=pad.t+ch*(1-y/100);i?ctx.lineTo(x,yy):ctx.moveTo(x,yy)});ctx.stroke();
+}
+
+function render(){
+ const h=state.spins.map(x=>Number(x.result)),t=transitions(h),p=model(h),bt=backtest(h),tol=Number($("tol").value);
+ $("spinCounter").textContent=h.length+" spins";$("count2").textContent=h.length+" spins";$("predCount").textContent=state.predictions.filter(x=>x.prediction).length;$("evaluated").textContent=bt.n;
+ $("history").innerHTML=h.slice(-24).map(n=>"<span class='result "+color(n)+"'>"+n+"</span>").join("");
+ $("lastPocket").textContent=h.length?h.at(-1):"—";
+ if(t.length){const x=t.at(-1);$("tFrom").textContent=x.from;$("tTo").textContent=x.to;$("tJump").textContent=(x.j>=0?"+":"")+x.j;$("tDir").textContent=x.d;$("jumpHistory").innerHTML=t.slice(-30).map(x=>"<span class='chip'>"+(x.j>=0?"+":"")+x.j+"</span>").join("");$("directionHistory").innerHTML=t.slice(-30).map(x=>"<span class='chip'>"+x.d+"</span>").join("")}
+ else{$("tFrom").textContent="—";$("tTo").textContent="—";$("tJump").textContent="—";$("tDir").textContent="—";$("jumpHistory").innerHTML="";$("directionHistory").innerHTML=""}
+ const dirs={CW:0,CCW:0,SAME:0};t.forEach(x=>dirs[x.d]++);$("cw").textContent=pct(dirs.CW,t.length);$("ccw").textContent=pct(dirs.CCW,t.length);$("same").textContent=pct(dirs.SAME,t.length);$("dirTotal").textContent=t.length;
+ if(p){
+   $("target").textContent=p.target;$("probability").textContent=(p.prob*100).toFixed(2)+"%";$("signal").textContent=p.prob>=.06?"SEÑAL":p.prob>=.035?"SEÑAL DÉBIL":"BAJA SEÑAL";$("signal").className="signal "+(p.prob>=.06?"high":p.prob>=.035?"low":"none");
+   const sj=jump(h.at(-1),p.target);$("jumpPred").textContent=(sj>=0?"+":"")+sj+" pockets (más probable)";$("dirPred").textContent=p.predDir+" · CW "+(p.cw*100).toFixed(1)+"% / CCW "+(p.ccw*100).toFixed(1)+"%";$("zone").textContent=neigh(p.target,Number($("tol").value)).join(" · ");
+   $("ranking").innerHTML=p.ranking.map((x,i)=>"<div class='rank'><div class='rankTop'><span class='rankNum'>#"+(i+1)+" "+x.n+"</span><span class='rankPct'>"+(x.p*100).toFixed(2)+"%</span></div><div class='bar'><i style='width:"+Math.max(2,100*x.p/p.ranking[0].p)+"%'></i></div></div>").join("");
+   const alerts=[...p.seq.slice(0,4),...p.jn.slice(0,3),...p.jp.slice(0,2)];$("patternCount").textContent=alerts.length;
+   $("alerts").innerHTML=alerts.length?alerts.map(q=>q.type==="sequence"?("<div class='alert'><b>SECUENCIA HISTÓRICA ACTIVADA</b><br>"+q.key+" → "+q.next.join(", ")+" · "+q.occ+" coincidencias</div>") : q.type==="joint"?("<div class='alert'><b>PATRÓN SALTO + DIRECCIÓN ACTIVADO</b><br>"+q.key+" · "+q.occ+" coincidencias</div>") :("<div class='alert'><b>PATRÓN DE SALTOS ACTIVADO</b><br>"+q.key+" · "+q.occ+" coincidencias</div>")).join(""):"<div class='muted'>No hay un patrón repetido suficiente ahora mismo.</div>";
+   $("explanation").innerHTML=p.evidence.slice(0,9).map(x=>"<div><b>"+x.title+"</b> · "+x.samples+" muestras · "+x.text+"</div>").join("");
+ }else{
+   $("target").textContent="—";$("probability").textContent="—";$("signal").textContent="SIN SEÑAL";$("signal").className="signal none";$("jumpPred").textContent="—";$("dirPred").textContent="—";$("zone").textContent=h.length<12?"Necesitamos al menos 12 spins":"—";$("ranking").innerHTML="";$("alerts").innerHTML="<div class='muted'>Con 12 spins empieza el análisis predictivo.</div>";$("explanation").textContent="—";$("patternCount").textContent="0";
+ }
+ $("r0").textContent=pct(bt.hit[0],bt.n);$("r3").textContent=pct(bt.hit[3],bt.n);$("r5").textContent=pct(bt.hit[5],bt.n);$("r9").textContent=pct(bt.hit[9],bt.n);$("winRate").textContent=pct(bt.hit[tol],bt.n);const base=(2*tol+1)/37;$("baseline").textContent="";$("vsBase").textContent=bt.n?(((bt.hit[tol]/bt.n-base)*100>=0?"+":"")+((bt.hit[tol]/bt.n-base)*100).toFixed(1)+" pp"):"—";$("dirAcc").textContent=pct(bt.dir,bt.n);
+ $("predHistory").innerHTML=state.predictions.filter(x=>x.prediction&&x.actual!=null).slice(-35).reverse().map(x=>{const win=dist(x.prediction.target,x.actual)<=tol;return "<div class='predRow'><b>#"+x.spinIndex+"</b><span>"+x.prediction.target+" → "+x.actual+" · "+dist(x.prediction.target,x.actual)+"p</span><span>"+(x.prediction.predDir||"—")+"</span><b class='"+(win?"win":"loss")+"'>"+(win?"WIN":"LOSS")+"</b></div>"}).join("")||"—";
+ drawChart(h);
+}
+function buildButtons(){
+ const box=$("numbers");box.innerHTML="";
+ for(let n=0;n<=36;n++){const b=document.createElement("button");b.type="button";b.textContent=String(n);b.className="num "+color(n);b.addEventListener("pointerdown",()=>press(b));b.addEventListener("click",()=>addSpin(n));box.appendChild(b)}
+}
+load();buildButtons();$("storageStatus").textContent="LOCAL OK";
+$("themeBtn").addEventListener("click",()=>{document.body.classList.toggle("night");const on=document.body.classList.contains("night");localStorage.setItem("roulettePatternLab.theme",on?"night":"day");$("themeBtn").textContent=on?"Modo día":"Modo noche"});
+if(localStorage.getItem("roulettePatternLab.theme")==="night"){document.body.classList.add("night");$("themeBtn").textContent="Modo día"}
+$("tol").addEventListener("change",render);$("chartWindow").addEventListener("change",()=>drawChart(state.spins.map(x=>Number(x.result))));
+$("undo").addEventListener("click",undo);$("txt").addEventListener("click",exportTxt);$("json").addEventListener("click",backup);$("clear").addEventListener("click",clearAll);
+$("restoreBtn").addEventListener("click",()=>$("restore").click());$("restore").addEventListener("change",e=>e.target.files[0]&&restoreFile(e.target.files[0]));
+window.addEventListener("resize",()=>drawChart(state.spins.map(x=>Number(x.result))));
+render();
+})();
+</script>
+</body></html>
