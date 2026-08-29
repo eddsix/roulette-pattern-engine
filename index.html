@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0b1220">
-<title>Roulette Pattern Lab — v10.7</title>
+<title>Roulette Pattern Lab — v11.0</title>
 <style>
 :root{
  --bg:#f4f6fa;--panel:#fff;--text:#111827;--muted:#667085;--line:#e5e7eb;
@@ -55,12 +55,14 @@ canvas{display:block;width:100%;height:210px;margin-top:12px}
 input[type=file]{display:none}
 @media(max-width:760px){.hero{grid-template-columns:minmax(0,1fr);text-align:center}.heroLeft,.heroRight{text-align:center}.grid2{grid-template-columns:minmax(0,1fr)}.transitionGrid{grid-template-columns:repeat(2,1fr)}.ranking{grid-template-columns:repeat(2,1fr)}.statsGrid{grid-template-columns:repeat(2,1fr)}.numbers{grid-template-columns:repeat(6,1fr)}}
 @media(max-width:430px){.brand h1{font-size:19px}.target{font-size:62px}.numbers{grid-template-columns:repeat(6,1fr);gap:6px}.num{min-height:43px}}
+
+.weights{display:grid;grid-template-columns:1fr 1fr;gap:8px}.weight{border:1px solid var(--line);border-radius:12px;padding:10px;background:var(--soft)}.weightTop{display:flex;justify-content:space-between;align-items:center;font-size:11px}.weight strong{font-size:18px}.miniBar{height:6px;background:#e6eaf0;border-radius:99px;margin-top:6px;overflow:hidden}.miniBar i{display:block;height:100%;background:var(--accent)}.patternItem{padding:7px 0;border-bottom:1px solid var(--line);font-size:11px;overflow-wrap:anywhere}.patternGood{color:var(--good)}.patternBad{color:var(--bad)}@media(max-width:600px){.weights{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 <main class="app">
 <header class="topbar">
-  <div class="brand"><h1>Roulette Pattern Lab</h1><p>Pattern Intelligence Engine · v10.7</p></div>
+  <div class="brand"><h1>Roulette Pattern Lab</h1><p>Adaptive Learning Engine · v11.0</p></div>
   <div class="toolbar">
     <button class="iconbtn" id="themeBtn" type="button">Modo noche</button>
     <select class="select" id="tol"><option value="1">±1</option><option value="2">±2</option><option value="3" selected>±3</option><option value="4">±4</option><option value="5">±5</option><option value="6">±6</option><option value="7">±7</option><option value="8">±8</option><option value="9">±9</option></select>
@@ -114,6 +116,16 @@ input[type=file]{display:none}
 
 <section class="card"><div class="sectionHead"><h2>¿Por qué esta predicción?</h2></div><div id="explanation" class="details">—</div></section>
 
+
+<section class="card">
+  <div class="sectionHead"><h2>Pesos adaptativos</h2><span class="counter">aprendizaje automático</span></div>
+  <div id="adaptiveWeights" class="weights"></div>
+  <div id="adaptiveSummary" class="details">El sistema aprende qué familias de señales han rendido mejor históricamente.</div>
+</section>
+<section class="card">
+  <div class="sectionHead"><h2>Biblioteca de patrones</h2><span class="counter">memoria</span></div>
+  <div id="patternLibrary" class="details">Todavía no hay memoria de patrones.</div>
+</section>
 <section class="card"><div class="sectionHead"><h2>Historial de predicciones</h2><span class="counter" id="predCount">0</span></div><div id="predHistory">—</div></section>
 
 <section class="card"><div class="sectionHead"><h2>Rendimiento</h2><select class="select" id="chartWindow"><option value="25">Últimas 25</option><option value="50" selected>Últimas 50</option><option value="100">Últimas 100</option></select></div>
@@ -240,8 +252,109 @@ function backtest(h){
 function pct(n,d){return d?(100*n/d).toFixed(1)+"%":"—"}
 function color(n){return n===0?"green":RED.has(Number(n))?"red":"black"}
 
+
+function familyCandidates(h,family){
+  if(h.length<12)return [];
+  const out=[];
+  if(family==="sequence"){
+    for(let len=2;len<=Math.min(10,h.length-1);len++){
+      const key=h.slice(-len).join(",");
+      const next=[];
+      for(let i=0;i+len<h.length;i++)if(h.slice(i,i+len).join(",")===key)next.push(h[i+len]);
+      if(next.length>=2)out.push({type:"sequence",len,key,occ:next.length,next});
+    }
+  }else if(family==="joint"){
+    const t=transitions(h),sig=t.map(x=>x.j+":"+x.d);
+    for(let len=2;len<=Math.min(7,sig.length-1);len++){
+      const key=sig.slice(-len).join("|"),next=[];
+      for(let i=0;i+len<sig.length;i++)if(sig.slice(i,i+len).join("|")===key)next.push(h[i+len]);
+      if(next.length>=2)out.push({type:"joint",len,key,occ:next.length,next});
+    }
+  }else if(family==="jump"){
+    const t=transitions(h),j=t.map(x=>x.j);
+    for(let len=2;len<=Math.min(7,j.length-1);len++){
+      const key=j.slice(-len).join(","),next=[];
+      for(let i=0;i+len<j.length;i++)if(j.slice(i,i+len).join(",")===key)next.push(j[i+len]);
+      if(next.length>=2)out.push({type:"jump",len,key,occ:next.length,next});
+    }
+  }else if(family==="pair"){
+    if(h.length<3)return [];
+    const key=h.slice(-2).join(","),next=[];
+    for(let i=0;i+2<h.length;i++)if(h[i]+","+h[i+1]===key)next.push(h[i+2]);
+    if(next.length>=2)out.push({type:"pair",len:2,key,occ:next.length,next});
+  }else if(family==="transition"){
+    const next=[];
+    for(let i=0;i<h.length-1;i++)if(h[i]===h.at(-1))next.push(h[i+1]);
+    if(next.length>=2)out.push({type:"transition",len:1,key:String(h.at(-1)),occ:next.length,next});
+  }
+  return out;
+}
+function candidateScoreForFamily(h,family){
+  const c=familyCandidates(h,family);
+  if(!c.length)return null;
+  const score=Array(37).fill(0);
+  for(const p of c.slice(0,5)){
+    for(const n of p.next)score[idx(n)]+=1;
+  }
+  const total=p=>p.reduce((a,b)=>a+b,0);
+  const rank=score.map((v,n)=>({n,v})).sort((a,b)=>b.v-a.v);
+  return rank.length?rank[0].n:null;
+}
+function familyBacktest(h,family){
+  let n=0,hit3=0,exact=0;
+  for(let i=12;i<h.length;i++){
+    const train=h.slice(0,i), actual=h[i], target=candidateScoreForFamily(train,family);
+    if(target==null)continue;
+    n++; const e=dist(target,actual); if(e===0)exact++; if(e<=3)hit3++;
+  }
+  if(!n)return {n:0,hit3:0,exact:0,utility:0};
+  const hit=hit3/n, ex=exact/n;
+  const utility=((hit-(7/37))*0.7+(ex-(1/37))*0.3)*Math.min(1,n/40);
+  return {n,hit3,exact,utility};
+}
+function adaptiveLearning(h){
+  const fams=["sequence","joint","jump","pair","transition"],perf={},weights={};
+  for(const f of fams)perf[f]=familyBacktest(h,f);
+  for(const f of fams){
+    const u=Math.max(-0.03,Math.min(0.03,perf[f].utility));
+    weights[f]=1+((u+0.03)/0.06)*3;
+  }
+  return {perf,weights};
+}
+function patternMemory(h){
+  const arr=[];
+  const seq=familyCandidates(h,"sequence"),joint=familyCandidates(h,"joint"),jumpc=familyCandidates(h,"jump");
+  for(const p of [...seq,...joint,...jumpc]){
+    const key=p.type+"|"+p.key, st=state.patternMemory[key]||{occ:0,next:{}};
+    st.occ=Math.max(st.occ,p.occ);
+    for(const n of p.next)st.next[n]=(st.next[n]||0)+1;
+    state.patternMemory[key]=st;
+    arr.push([key,st]);
+  }
+  return arr.sort((a,b)=>b[1].occ-a[1].occ).slice(0,20);
+}
+function adaptiveModel(h){
+  if(h.length<12)return null;
+  const al=adaptiveLearning(h), fams=["sequence","joint","jump","pair","transition"], score=Array(37).fill(0), evidence=[];
+  for(const f of fams){
+    const c=familyCandidates(h,f), w=al.weights[f];
+    for(const p of c.slice(0,5)){
+      for(const n of p.next)score[idx(n)]+=w;
+      evidence.push({family:f,key:p.key,occ:p.occ,weight:w});
+    }
+  }
+  // current pocket transition as secondary learned source
+  const row=Array(37).fill(0);for(let i=0;i<h.length-1;i++)if(h[i]===h.at(-1))row[idx(h[i+1])]++;
+  const rowTotal=row.reduce((a,b)=>a+b,0)+37;
+  for(let n=0;n<37;n++)score[n]+=((row[n]+1)/rowTotal)*1.5;
+  const rank=score.map((v,n)=>({n,v})).sort((a,b)=>b.v-a.v),total=rank.reduce((a,b)=>a+b.v,0),r=rank.map(x=>({...x,p:x.v/total})),best=r[0];
+  const expected=r.reduce((a,x)=>a+jump(h.at(-1),x.n)*x.p,0);
+  const cw=r.filter(x=>jump(h.at(-1),x.n)>0).reduce((a,x)=>a+x.p,0),ccw=r.filter(x=>jump(h.at(-1),x.n)<0).reduce((a,x)=>a+x.p,0);
+  return {target:best.n,prob:best.p,ranking:r.slice(0,12),expected,predDir:cw>=ccw?"CW":"CCW",cw,ccw,evidence,adaptive:al};
+}
+
 function addSpin(n){
- n=Number(n);const h=state.spins.map(x=>Number(x.result)),p=model(h),now=new Date().toISOString();
+ n=Number(n);const h=state.spins.map(x=>Number(x.result)),p=adaptiveModel(h),now=new Date().toISOString();
  state.predictions.push({id:state.predictions.length+1,spinIndex:h.length+1,previous:h.at(-1)??null,prediction:p,actual:n,createdAt:now});
  state.spins.push({id:state.spins.length+1,result:n,createdAt:now});
  save();render();
@@ -249,7 +362,8 @@ function addSpin(n){
 function exportTxt(){
  const lines=["ROULETTE PATTERN LAB v10.0","SPIN | RESULT | JUMP | DIRECTION | DATE"];
  state.spins.forEach((x,i)=>{const prev=i?state.spins[i-1].result:null;lines.push((i+1)+" | "+x.result+" | "+(prev==null?"":jump(prev,x.result))+" | "+(prev==null?"":dir(prev,x.result))+" | "+x.createdAt)});
- download("roulette-history-v10.txt",lines.join("\n"),"text/plain");
+ download("roulette-history-v10.txt",lines.join("
+"),"text/plain");
 }
 function backup(){download("roulette-pattern-lab-v10.json",JSON.stringify(state,null,2),"application/json")}
 function download(name,data,type){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([data],{type}));a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
@@ -292,6 +406,15 @@ function render(){
  }
  $("r0").textContent=pct(bt.hit[0],bt.n);$("r3").textContent=pct(bt.hit[3],bt.n);$("r5").textContent=pct(bt.hit[5],bt.n);$("r9").textContent=pct(bt.hit[9],bt.n);$("winRate").textContent=pct(bt.hit[tol],bt.n);const base=(2*tol+1)/37;$("baseline").textContent=(base*100).toFixed(1)+"%";$("vsBase").textContent=bt.n?(((bt.hit[tol]/bt.n-base)*100>=0?"+":"")+((bt.hit[tol]/bt.n-base)*100).toFixed(1)+" pp"):"—";$("dirAcc").textContent=pct(bt.dir,bt.n);
  $("predHistory").innerHTML=state.predictions.filter(x=>x.prediction&&x.actual!=null).slice(-35).reverse().map(x=>{const win=dist(x.prediction.target,x.actual)<=tol;return "<div class='predRow'><b>#"+x.spinIndex+"</b><span>"+x.prediction.target+" → "+x.actual+" · "+dist(x.prediction.target,x.actual)+"p</span><span>"+(x.prediction.predDir||"—")+"</span><b class='"+(win?"win":"loss")+"'>"+(win?"WIN":"LOSS")+"</b></div>"}).join("")||"—";
+ 
+ if(p){
+   const ws=p.adaptive.weights;
+   $("adaptiveWeights").innerHTML=Object.entries(ws).map(([k,v])=>"<div class='weight'><div class='weightTop'><span>"+k+"</span><strong>"+v.toFixed(2)+"×</strong></div><div class='miniBar'><i style='width:"+Math.min(100,(v/4)*100)+"%'></i></div><div class='muted'>tests "+p.adaptive.perf[k].n+" · utilidad "+(p.adaptive.perf[k].utility*100).toFixed(2)+"%</div></div>").join("");
+   $("adaptiveSummary").textContent="Los pesos se reajustan según rendimiento walk-forward; con pocas muestras se acercan al peso neutro.";
+   const mem=patternMemory(h);
+   $("patternLibrary").innerHTML=mem.map(([k,st])=>"<div class='patternItem'><b>"+k+"</b> · "+st.occ+" coincidencias · siguientes "+Object.entries(st.next).sort((a,b)=>b[1]-a[1]).map(x=>x[0]+"("+x[1]+")").join(", ")+"</div>").join("")||"Todavía no hay memoria de patrones.";
+ }
+
  drawChart(h);
 
  }catch(err){ console.error(err); $("storageStatus").textContent="ERROR: "+err.message; }
