@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#111827">
+<title>Roulette Pattern Lab v3.0.1 Recovery</title>
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+<main>
+<header><h1>Roulette Pattern Lab</h1><p>v3.0.1 · Data Recovery & Backup</p></header>
+<section class="card">
+<h2>Estado del histórico</h2>
+<div id="status">Comprobando...</div>
+<div id="preview"></div>
+</section>
+<section class="card">
+<button id="copy">COPIAR HISTÓRICO</button>
+<button id="download">DESCARGAR BACKUP</button>
+</section>
+<section class="card">
+<h2>Importar backup</h2>
+<input id="file" type="file" accept=".json">
+<button id="import">IMPORTAR BACKUP</button>
+<p class="note">Importar reemplaza el histórico actual. Hazlo solo con un backup válido.</p>
+</section>
+<section class="card">
+<h2>Datos</h2>
+<div id="all" class="all"></div>
+</section>
+</main>
+<script src="assets/app.js"></script>
+</body>
+</html>
