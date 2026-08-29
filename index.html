@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111827">
+<title>Roulette Pattern Lab v4.0</title>
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+<main class="app">
+<header><div><h1>Roulette Pattern Lab</h1><p>Real-time Pattern Engine · v4.0</p></div><span id="db" class="pill">DB...</span></header>
+
+<section class="card hero">
+<div class="label">PRÓXIMO SPIN</div>
+<div id="target" class="target">—</div>
+<div id="signal" class="signal">NO SIGNAL</div>
+<div id="confidence">—</div>
+<div id="zone" class="muted">Necesitamos histórico</div>
+</section>
+
+<section class="card">
+<div class="head"><h2>Histórico</h2><strong id="count">0 spins</strong></div>
+<div id="history" class="history empty">Sin resultados todavía.</div>
+</section>
+
+<section class="card">
+<h2>Introducir resultado</h2>
+<div id="numbers" class="numbers"></div>
+<div class="actions">
+<button id="undo">Deshacer</button>
+<button id="txt">TXT histórico</button>
+<button id="json">Backup JSON</button>
+</div>
+<input id="restore" type="file" accept=".json" hidden>
+<button id="restoreBtn" class="secondary">Restaurar backup JSON</button>
+</section>
+
+<section class="card">
+<h2>Análisis</h2>
+<div id="evidence" class="evidence">La predicción aparecerá después de acumular datos.</div>
+</section>
+
+<section class="grid">
+<div class="card stat"><span>Predicciones</span><strong id="preds">0</strong></div>
+<div class="card stat"><span>Exact</span><strong id="exact">—</strong></div>
+<div class="card stat"><span>±1 pocket</span><strong id="r1">—</strong></div>
+<div class="card stat"><span>±3 pockets</span><strong id="r3">—</strong></div>
+</section>
+
+<section class="card statusbox">
+<div>Base local: <b id="dbCount">0</b> spins</div>
+<div>Último guardado: <b id="saved">—</b></div>
+<p>Los datos se guardan en IndexedDB. TXT y JSON son copias externas para proteger el histórico entre dispositivos o reinstalaciones.</p>
+</section>
+</main>
+<script src="assets/app.js"></script>
+</body>
+</html>
