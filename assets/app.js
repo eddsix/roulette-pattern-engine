@@ -1,84 +1,32 @@
-const DB_NAME="RoulettePatternLabV4",DB_VERSION=1,SPINS="spins",PREDS="predictions";
-const W=[0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
-let db;
-const $=id=>document.getElementById(id),idx=n=>W.indexOf(n);
-function openDB(){return new Promise((ok,no)=>{const r=indexedDB.open(DB_NAME,DB_VERSION);r.onupgradeneeded=()=>{const d=r.result;if(!d.objectStoreNames.contains(SPINS))d.createObjectStore(SPINS,{keyPath:"id",autoIncrement:true});if(!d.objectStoreNames.contains(PREDS))d.createObjectStore(PREDS,{keyPath:"id",autoIncrement:true})};r.onsuccess=()=>{db=r.result;ok()};r.onerror=()=>no(r.error)})}
-function all(st){return new Promise((ok,no)=>{const r=db.transaction(st).objectStore(st).getAll();r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)})}
-function put(st,o){return new Promise((ok,no)=>{const r=db.transaction(st,"readwrite").objectStore(st).put(o);r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)})}
-function del(st,id){return new Promise((ok,no)=>{const r=db.transaction(st,"readwrite").objectStore(st).delete(id);r.onsuccess=ok;r.onerror=()=>no(r.error)})}
-function signed(a,b){let x=(idx(b)-idx(a)+37)%37;return x>18?x-37:x}
-function distance(a,b){return Math.abs(signed(a,b))}
-function direction(a,b){const s=signed(a,b);return s>0?"CW":s<0?"CCW":"SAME"}
-function neighbors(n,r=5){const i=idx(n);return Array.from({length:2*r+1},(_,k)=>W[(i-r+k+37)%37])}
-function transitions(h){const z=[];for(let i=1;i<h.length;i++)z.push({from:h[i-1],to:h[i],jump:signed(h[i-1],h[i]),dir:direction(h[i-1],h[i])});return z}
-function normalize(c,s=.5){const total=c.reduce((a,b)=>a+b,0)+37*s;return c.map(x=>(x+s)/total)}
+const DB="RoulettePatternLabV4",W=[0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26],RED=new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);let db;
+const $=x=>document.getElementById(x),idx=n=>W.indexOf(n);
+function open(){return new Promise((ok,no)=>{let r=indexedDB.open(DB,1);r.onupgradeneeded=()=>{let d=r.result;if(!d.objectStoreNames.contains("spins"))d.createObjectStore("spins",{keyPath:"id",autoIncrement:true});if(!d.objectStoreNames.contains("predictions"))d.createObjectStore("predictions",{keyPath:"id",autoIncrement:true})};r.onsuccess=()=>{db=r.result;ok()};r.onerror=()=>no(r.error)})}
+function all(s){return new Promise((ok,no)=>{let r=db.transaction(s).objectStore(s).getAll();r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)})}
+function put(s,o){return new Promise((ok,no)=>{let r=db.transaction(s,"readwrite").objectStore(s).put(o);r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)})}
+function del(s,id){return new Promise((ok,no)=>{let r=db.transaction(s,"readwrite").objectStore(s).delete(id);r.onsuccess=ok;r.onerror=()=>no(r.error)})}
+function jump(a,b){let x=(idx(b)-idx(a)+37)%37;return x>18?x-37:x}function dir(a,b){let x=jump(a,b);return x>0?"CW":x<0?"CCW":"SAME"}function dist(a,b){return Math.abs(jump(a,b))}function col(n){return n===0?"green":RED.has(n)?"red":"black"}function trans(h){let z=[];for(let i=1;i<h.length;i++)z.push({from:h[i-1],to:h[i],j:jump(h[i-1],h[i]),d:dir(h[i-1],h[i])});return z}
 
-function model(h){
- if(h.length<12)return null;
- const score=Array(37).fill(0),ev=[],t=transitions(h),j=t.map(x=>x.jump),d=t.map(x=>x.dir);
- // 1. Full transition matrix, conditioned on the current pocket.
- const row=Array(37).fill(0);for(let i=0;i<h.length-1;i++)if(h[i]===h.at(-1))row[idx(h[i+1])]++;
- const rp=normalize(row,1);for(let n=0;n<37;n++)score[n]+=rp[n]*2.0;
- ev.push({name:"Transición desde pocket actual",samples:row.reduce((a,b)=>a+b,0),weight:2});
- // 2. Learn the next jump from the latest jump, with signed pocket offsets.
- const lj=j.at(-1),jc=Array(37).fill(0);for(let i=0;i<j.length-1;i++)if(j[i]===lj)jc[j[i+1]+18]++;
- const jp=normalize(jc,.35);for(let k=0;k<37;k++){const q=k-18,n=W[(idx(h.at(-1))+q+37)%37];score[n]+=jp[k]*3.5}
- ev.push({name:"Siguiente salto | "+(lj>=0?"+":"")+lj,samples:jc.reduce((a,b)=>a+b,0),weight:3.5});
- // 3. Learn the next direction from the latest direction.
- const ld=d.at(-1),dc={CW:.35,CCW:.35,SAME:.35};for(let i=0;i<d.length-1;i++)if(d[i]===ld)dc[d[i+1]]++;
- const dt=dc.CW+dc.CCW+dc.SAME;for(let n=0;n<37;n++){const s=signed(h.at(-1),n),q=s>0?"CW":s<0?"CCW":"SAME";score[n]+=(dc[q]/dt)*2.5}
- ev.push({name:"Siguiente dirección | "+ld,samples:Math.max(0,d.filter(x=>x===ld).length-1),weight:2.5});
- // 4. Joint jump+direction signatures.
- const sig=t.map(x=>x.jump+":"+x.dir);let active=0;
- for(const o of [2,3,4,5]){
-   if(sig.length<=o)continue;const key=sig.slice(-o).join("|"),c=Array(37).fill(0);let total=0;
-   for(let i=0;i+o<sig.length;i++)if(sig.slice(i,i+o).join("|")===key){c[idx(h[i+o])]++;total++}
-   if(total){active++;for(let n=0;n<37;n++)score[n]+=(c[n]/total)*5;ev.push({name:"Patrón conjunto salto+dirección · orden "+o,samples:total,weight:5})}
- }
- // 5. Pure jump patterns.
- for(const o of [2,3,4]){
-   if(j.length<=o)continue;const key=j.slice(-o).join(","),c=Array(37).fill(0);let total=0;
-   for(let i=0;i+o<j.length;i++)if(j.slice(i,i+o).join(",")===key){const q=j[i+o],n=W[(idx(h.at(-1))+q+37)%37];c[idx(n)]++;total++}
-   if(total){for(let n=0;n<37;n++)score[n]+=(c[n]/total)*3.2;ev.push({name:"Patrón puro de saltos · orden "+o,samples:total,weight:3.2})}
- }
- // 6. Pocket-pair pattern.
- if(h.length>=3){const key=h.at(-2)+","+h.at(-1),c=Array(37).fill(0);let total=0;for(let i=0;i+2<h.length;i++)if(h[i]+","+h[i+1]===key){c[idx(h[i+2])]++;total++}if(total){for(let n=0;n<37;n++)score[n]+=(c[n]/total)*3;ev.push({name:"Patrón de pareja de pockets",samples:total,weight:3})}}
- // 7. Small recency signal, intentionally weak.
- for(let i=Math.max(0,h.length-80);i<h.length-1;i++){const age=h.length-2-i;score[idx(h[i+1])]+=Math.pow(.985,age)*.08}
- // 8. No neighbor bonus: all 37 pockets are ranked only by learned evidence.
- const rank=score.map((v,n)=>({n,score:v})).sort((a,b)=>b.score-a.score),total=rank.reduce((a,x)=>a+x.score,0);if(!total)return null;
- const r=rank.map(x=>({...x,p:x.score/total})),best=r[0];
- const expected=r.reduce((a,x)=>a+signed(h.at(-1),x.n)*x.p,0);
- const cw=r.filter(x=>signed(h.at(-1),x.n)>0).reduce((a,x)=>a+x.p,0),ccw=r.filter(x=>signed(h.at(-1),x.n)<0).reduce((a,x)=>a+x.p,0);
- return {target:best.n,prob:best.p,ranking:r.slice(0,12),expectedJump:expected,predDirection:cw>=ccw?"CW":"CCW",cw,ccw,evidence:ev,activePatterns:active}
-}
+function seqs(h){let out=[];for(let len=2;len<=Math.min(10,h.length-1);len++){let key=h.slice(-len).join(","),next=[];for(let i=0;i+len<h.length;i++)if(h.slice(i,i+len).join(",")===key)next.push(h[i+len]);if(next.length)out.push({len,key,next})}return out.sort((a,b)=>b.len-a.len)}
+function model(h){if(h.length<12)return null;let s=Array(37).fill(.05),ev=[],t=trans(h),j=t.map(x=>x.j),d=t.map(x=>x.d),sp=seqs(h);
+for(let p of sp.slice(0,5)){let c=Array(37).fill(0);p.next.forEach(n=>c[idx(n)]++);for(let n=0;n<37;n++)s[n]+=(c[n]/p.next.length)*(2+p.len);ev.push({x:"Secuencia repetida "+p.len+" pockets",y:p.key+" → "+p.next.join(","),n:p.next.length,w:2+p.len})}
+let sig=t.map(x=>x.j+":"+x.d);for(let len=2;len<=Math.min(7,sig.length-1);len++){let key=sig.slice(-len).join("|"),next=[];for(let i=0;i+len<sig.length;i++)if(sig.slice(i,i+len).join("|")===key)next.push(h[i+len]);if(next.length){let c=Array(37).fill(0);next.forEach(n=>c[idx(n)]++);for(let n=0;n<37;n++)s[n]+=(c[n]/next.length)*5;ev.push({x:"Patrón salto+dirección "+len,y:key,n:next.length,w:5})}}
+let lj=j.at(-1),jc=Array(37).fill(0);for(let i=0;i<j.length-1;i++)if(j[i]===lj)jc[j[i+1]+18]++;let jt=jc.reduce((a,b)=>a+b,0)+12;for(let k=0;k<37;k++)s[idx(W[(idx(h.at(-1))+k-18+37)%37])]+=((jc[k]+.35)/jt)*3.5;
+let ld=d.at(-1),dc={CW:.5,CCW:.5,SAME:.5};for(let i=0;i<d.length-1;i++)if(d[i]===ld)dc[d[i+1]]++;let dt=dc.CW+dc.CCW+dc.SAME;for(let n=0;n<37;n++){let q=jump(h.at(-1),n)>0?"CW":jump(h.at(-1),n)<0?"CCW":"SAME";s[n]+=(dc[q]/dt)*2}
+let row=Array(37).fill(0);for(let i=0;i<h.length-1;i++)if(h[i]===h.at(-1))row[idx(h[i+1])]++;let rt=row.reduce((a,b)=>a+b,0)+37;for(let n=0;n<37;n++)s[n]+=((row[n]+1)/rt)*2;
+for(let i=Math.max(0,h.length-80);i<h.length-1;i++)s[idx(h[i+1])]+=Math.pow(.985,h.length-2-i)*.08;
+let r=s.map((v,n)=>({n,v})).sort((a,b)=>b.v-a.v),tot=r.reduce((a,b)=>a+b.v,0),p=r.map(x=>({...x,p:x.v/tot})),best=p[0],expected=p.reduce((a,x)=>a+jump(h.at(-1),x.n)*x.p,0),cw=p.filter(x=>jump(h.at(-1),x.n)>0).reduce((a,x)=>a+x.p,0),ccw=p.filter(x=>jump(h.at(-1),x.n)<0).reduce((a,x)=>a+x.p,0);
+return{target:best.n,prob:best.p,ranking:p.slice(0,12),expected,predDir:cw>=ccw?"CW":"CCW",cw,ccw,ev,sp,active:ev.length}}
+function back(h){let o={n:0,hit:Array(10).fill(0),dir:0};for(let i=12;i<h.length;i++){let p=model(h.slice(0,i));if(!p)continue;o.n++;for(let r=0;r<=9;r++)if(dist(p.target,h[i])<=r)o.hit[r]++;if(dir(h[i-1],h[i])===p.predDir)o.dir++}return o}function pct(n,d){return d?(100*n/d).toFixed(1)+"%":"—"}
 
-function backtest(h){
- const out={n:0,hit:[0,0,0,0,0,0],dirHit:0,dirN:0};
- for(let i=12;i<h.length;i++){const p=model(h.slice(0,i));if(!p)continue;out.n++;for(let r=0;r<=5;r++)if(distance(p.target,h[i])<=r)out.hit[r]++;if(i>0){out.dirN++;if(direction(h[i-1],h[i])===p.predDirection)out.dirHit++}}
- return out
-}
-function pct(n,d){return d?(100*n/d).toFixed(1)+"%":"—"}
-
-async function addSpin(n){
- const ss=(await all(SPINS)).sort((a,b)=>a.id-b.id),h=ss.map(x=>x.result),p=model(h);
- const pid=await put(PREDS,{spinIndex:h.length+1,previous:h.at(-1)??null,prediction:p,actual:n,createdAt:new Date().toISOString()});
- await put(SPINS,{result:n,createdAt:new Date().toISOString(),predictionId:pid});
- await render()
-}
-async function undo(){const ss=(await all(SPINS)).sort((a,b)=>a.id-b.id);if(!ss.length)return;const x=ss.at(-1);await del(SPINS,x.id);if(x.predictionId)await del(PREDS,x.predictionId);await render()}
-async function exportTxt(){const ss=(await all(SPINS)).sort((a,b)=>a.id-b.id),lines=["ROULETTE PATTERN LAB v7.0","HISTORICAL SPINS",""];for(let i=0;i<ss.length;i++){const prev=i?ss[i-1].result:null,n=ss[i].result;lines.push(String(i+1).padStart(6,"0")+" | "+n+" | "+(prev===null?"":signed(prev,n))+" | "+(prev===null?"":direction(prev,n))+" | "+ss[i].createdAt)}const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([lines.join("\n")],{type:"text/plain"}));a.download="roulette-history-v7.txt";a.click()}
-async function backup(){const data={schemaVersion:7,wheel:W,exportedAt:new Date().toISOString(),spins:await all(SPINS),predictions:await all(PREDS)};const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:"application/json"}));a.download="roulette-pattern-lab-backup-v7.json";a.click()}
-async function restore(file){try{const d=JSON.parse(await file.text());if(!Array.isArray(d.spins))throw Error("Backup inválido");if(!confirm("Esto reemplazará el histórico actual. ¿Continuar?"))return;await new Promise((ok,no)=>{const t=db.transaction([SPINS,PREDS],"readwrite");t.objectStore(SPINS).clear();t.objectStore(PREDS).clear();t.oncomplete=ok;t.onerror=()=>no(t.error)});for(const x of d.spins)await put(SPINS,x);for(const x of (Array.isArray(d.predictions)?d.predictions:[]))await put(PREDS,x);await render();alert("Backup restaurado")}catch(e){alert(e.message)}}
-
+async function add(n){let ss=(await all("spins")).sort((a,b)=>a.id-b.id),h=ss.map(x=>x.result),p=model(h),id=await put("predictions",{spinIndex:h.length+1,previous:h.at(-1)??null,prediction:p,actual:n,createdAt:new Date().toISOString()});await put("spins",{result:n,createdAt:new Date().toISOString(),predictionId:id});render()}
 async function render(){
- const ss=(await all(SPINS)).sort((a,b)=>a.id-b.id),h=ss.map(x=>x.result),ps=await all(PREDS),p=model(h),t=transitions(h),bt=backtest(h);
- $("count").textContent=h.length+" spins";$("sCount").textContent=h.length;$("tCount").textContent=t.length;
- $("history").innerHTML=h.slice(-24).map(n=>"<span>"+n+"</span>").join("");
- if(t.length){const x=t.at(-1);$("transition").innerHTML="<b>"+x.from+"</b> → <b>"+x.to+"</b> · salto <b>"+(x.jump>=0?"+":"")+x.jump+"</b> pockets · <b>"+x.dir+"</b> · distancia "+Math.abs(x.jump);$("jumpHistory").innerHTML=t.slice(-30).map((x,i)=>"<span>#"+(t.length-29+i)+" "+(x.jump>=0?"+":"")+x.jump+"</span>").join("");$("directionHistory").innerHTML=t.slice(-30).map((x,i)=>"<span>#"+(t.length-29+i)+" "+x.dir+"</span>").join("")}else{$("transition").textContent="—";$("jumpHistory").textContent="—";$("directionHistory").textContent="—"}
- const dc={CW:0,CCW:0,SAME:0};t.forEach(x=>dc[x.dir]++);$("cw").textContent=pct(dc.CW,t.length);$("ccw").textContent=pct(dc.CCW,t.length);$("same").textContent=pct(dc.SAME,t.length);$("dirTotal").textContent=t.length;
- if(p){$("target").textContent=p.target;$("signal").textContent=p.prob>=.06?"SEÑAL":p.prob>=.035?"SEÑAL DÉBIL":"BAJA SEÑAL";$("probability").textContent="Probabilidad empírica del target: "+(p.prob*100).toFixed(2)+"%";$("jumpPrediction").textContent="Salto previsto: "+(p.expectedJump>=0?"+":"")+p.expectedJump.toFixed(2)+" pockets";$("directionPrediction").textContent="Dirección prevista: "+p.predDirection+" · CW "+(p.cw*100).toFixed(1)+"% / CCW "+(p.ccw*100).toFixed(1)+"%";$("zone").textContent="Zona ±5: "+neighbors(p.target,5).join(" · ");$("ranking").innerHTML=p.ranking.map((x,i)=>"<div class='rank'><b>#"+(i+1)+" "+x.n+"</b><div>"+(x.p*100).toFixed(2)+"%</div><div class='bar'><i style='width:"+Math.max(2,100*x.p/p.ranking[0].p)+"%'></i></div></div>").join("");$("pCount").textContent=p.activePatterns;$("learning").innerHTML=p.evidence.map(x=>"<div><b>"+x.name+"</b> · "+x.samples+" muestras · peso "+x.weight+"</div>").join("")}else{$("target").textContent="—";$("signal").textContent="SIN SEÑAL";$("probability").textContent="Probabilidad empírica: —";$("jumpPrediction").textContent="Salto previsto: —";$("directionPrediction").textContent="Dirección prevista: —";$("zone").textContent=h.length<12?"Necesitamos al menos 12 spins":"Sin evidencia suficiente";$("ranking").textContent="—";$("pCount").textContent="0";$("learning").textContent="El modelo comienza a generar predicciones con 12 spins de entrenamiento."}
- $("vCount").textContent=bt.n;for(let r=0;r<=5;r++)$("r"+r).textContent=pct(bt.hit[r],bt.n);$("dirAcc").textContent=pct(bt.dirHit,bt.dirN);$("baseline5").textContent=bt.n?(100*11/37).toFixed(1)+"%":"—";$("backtestNote").textContent=bt.n?"Evaluadas "+bt.n+" predicciones históricas sin mirar su resultado futuro.":"La primera evaluación walk-forward aparece cuando existen al menos 13 spins."
+ let ss=(await all("spins")).sort((a,b)=>a.id-b.id),h=ss.map(x=>x.result),ps=(await all("predictions")).sort((a,b)=>a.id-b.id),p=model(h),t=trans(h),bt=back(h),tol=+$("tol").value;
+ $("spins").textContent=h.length;$("predCount").textContent=ps.filter(x=>x.prediction).length;$("evaluated").textContent=bt.n;$("history").innerHTML=h.slice(-24).map(n=>"<span class='"+col(n)+"'>"+n+"</span>").join("");
+ if(t.length){let x=t.at(-1);$("transition").innerHTML="<b>"+x.from+"</b> → <b>"+x.to+"</b> · salto <b>"+(x.j>=0?"+":"")+x.j+"</b> · <b>"+x.d+"</b>";$("jumpHistory").innerHTML=t.slice(-30).map(x=>"<span>"+(x.j>=0?"+":"")+x.j+"</span>").join("");$("directionHistory").innerHTML=t.slice(-30).map(x=>"<span>"+x.d+"</span>").join("")}
+ if(p){$("target").textContent=p.target;$("signal").textContent=p.prob>=.06?"SEÑAL":p.prob>=.035?"SEÑAL DÉBIL":"BAJA SEÑAL";$("probability").textContent="Probabilidad empírica: "+(p.prob*100).toFixed(2)+"%";let sj=jump(h.at(-1),p.target);$("jumpPrediction").textContent="Salto previsto: "+(sj>=0?"+":"")+sj+" pockets · esperado "+(p.expected>=0?"+":"")+p.expected.toFixed(2);$("directionPrediction").textContent="Dirección: "+p.predDir+" · CW "+(p.cw*100).toFixed(1)+"% / CCW "+(p.ccw*100).toFixed(1)+"%";$("zone").textContent="Zona ±5: "+neighbors(p.target).join(" · ");$("ranking").innerHTML=p.ranking.map((x,i)=>"<div class='rank'><b>#"+(i+1)+" "+x.n+"</b><div>"+(x.p*100).toFixed(2)+"%</div><div class='bar'><i style='width:"+Math.max(2,100*x.p/p.ranking[0].p)+"%'></i></div></div>").join("");$("explanation").innerHTML=p.ev.map(x=>"<div><b>"+x.x+"</b> · "+x.n+" muestras · "+x.y+"</div>").join("");$("alerts").innerHTML=p.sp.slice(0,4).map(x=>"<div class='alert'><b>SECUENCIA HISTÓRICA ACTIVADA</b><br>"+x.key+" → "+x.next.join(", ")+" · "+x.next.length+" coincidencias</div>").join("")||"No hay secuencia repetida suficiente."}else{$("target").textContent="—";$("signal").textContent="SIN SEÑAL";$("probability").textContent="Probabilidad: —";$("jumpPrediction").textContent="Salto previsto: —";$("directionPrediction").textContent="Dirección: —";$("zone").textContent=h.length<12?"Necesitamos al menos 12 spins":"—";$("ranking").textContent="—";$("alerts").textContent=h.length<12?"Aún no hay suficiente histórico.":"Sin patrón activo."}
+ $("r0").textContent=pct(bt.hit[0],bt.n);$("r1").textContent=pct(bt.hit[1],bt.n);$("r3").textContent=pct(bt.hit[3],bt.n);$("r5").textContent=pct(bt.hit[5],bt.n);$("r9").textContent=pct(bt.hit[9],bt.n);$("btDir").textContent=pct(bt.dir,bt.n);$("baseline").textContent=bt.n?(100*(2*tol+1)/37).toFixed(1)+"%":"—";$("winRate").textContent=pct(bt.hit[tol],bt.n);$("vsBase").textContent=bt.n?(((bt.hit[tol]/bt.n-(2*tol+1)/37)*100>=0?"+":"")+((bt.hit[tol]/bt.n-(2*tol+1)/37)*100).toFixed(1)+" pp"):"—";$("dirAcc").textContent=pct(bt.dir,bt.n);
+ let rows=ps.filter(x=>x.prediction&&x.actual!=null).slice(-30).reverse();$("predHistory").innerHTML=rows.map(x=>{let w=dist(x.prediction.target,x.actual)<=tol;return"<div class='predRow'><b>#"+x.spinIndex+"</b><span>"+x.prediction.target+" → "+x.actual+" · "+dist(x.prediction.target,x.actual)+"p</span><span>"+(x.prediction.predDir||"—")+"</span><b class='"+(w?"win":"loss")+"'>"+(w?"WIN":"LOSS")+"</b></div>"}).join("")||"—";
 }
-
-(async()=>{try{await openDB();$("db").textContent="DB OK"}catch(e){$("db").textContent="DB ERROR";return}for(let n=0;n<=36;n++){const b=document.createElement("button");b.textContent=n;if(n===0)b.className="zero";b.onclick=()=>addSpin(n);$("numbers").appendChild(b)}$("undo").onclick=undo;$("txt").onclick=exportTxt;$("json").onclick=backup;$("restoreBtn").onclick=()=>$("restore").click();$("restore").onchange=e=>e.target.files[0]&&restore(e.target.files[0]);await render()})()
+function neighbors(n){let i=idx(n);return Array.from({length:11},(_,k)=>W[(i-5+k+37)%37])}
+$("tol").onchange=render;$("theme").onclick=()=>{document.body.classList.toggle("night");$("theme").textContent=document.body.classList.contains("night")?"☀":"☾"};$("lang").onclick=()=>{alert("English interface foundation included; full translations can be expanded without changing the database.")};$("undo").onclick=async()=>{let s=(await all("spins")).sort((a,b)=>a.id-b.id);if(s.length){let x=s.at(-1);await del("spins",x.id);if(x.predictionId)await del("predictions",x.predictionId);render()}};$("txt").onclick=async()=>{let s=(await all("spins")).sort((a,b)=>a.id-b.id),l=s.map((x,i)=>{let p=i?s[i-1].result:null;return(i+1)+" | "+x.result+" | "+(p==null?"":jump(p,x.result))+" | "+(p==null?"":dir(p,x.result))}).join("\\n"),a=document.createElement("a");a.href=URL.createObjectURL(new Blob([l],{type:"text/plain"}));a.download="roulette-history-v8.txt";a.click()};$("json").onclick=async()=>{let d={schemaVersion:8,spins:await all("spins"),predictions:await all("predictions"),wheel:W},a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(d,null,2)],{type:"application/json"}));a.download="roulette-pattern-lab-v8.json";a.click()};$("restoreBtn").onclick=()=>$("restore").click();$("restore").onchange=async e=>{let d=JSON.parse(await e.target.files[0].text());if(!confirm("Reemplazar histórico?"))return;let t=db.transaction(["spins","predictions"],"readwrite");t.objectStore("spins").clear();t.objectStore("predictions").clear();t.oncomplete=async()=>{for(let x of d.spins||[])await put("spins",x);for(let x of d.predictions||[])await put("predictions",x);render()}};
+(async()=>{try{await open();$("db").textContent="DB OK"}catch(e){$("db").textContent="DB ERROR";return}for(let n=0;n<=36;n++){let b=document.createElement("button");b.textContent=n;b.className=col(n);b.onclick=()=>add(n);$("numbers").appendChild(b)}await render()})()
