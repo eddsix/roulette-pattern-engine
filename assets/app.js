@@ -28,12 +28,37 @@ async function render(){
  let rows=ps.filter(x=>x.prediction&&x.actual!=null).slice(-30).reverse();$("predHistory").innerHTML=rows.map(x=>{let w=dist(x.prediction.target,x.actual)<=tol;return"<div class='predRow'><b>#"+x.spinIndex+"</b><span>"+x.prediction.target+" → "+x.actual+" · "+dist(x.prediction.target,x.actual)+"p</span><span>"+(x.prediction.predDir||"—")+"</span><b class='"+(w?"win":"loss")+"'>"+(w?"WIN":"LOSS")+"</b></div>"}).join("")||"—";
 }
 function neighbors(n){let i=idx(n);return Array.from({length:11},(_,k)=>W[(i-5+k+37)%37])}
-$("tol").onchange=render;function applyTheme(mode){document.body.classList.toggle("night",mode==="night");$("theme").textContent=mode==="night"?"☀":"☾";localStorage.setItem("rouletteTheme",mode)}
-$("theme").onclick=()=>applyTheme(document.body.classList.contains("night")?"day":"night");
-applyTheme(localStorage.getItem("rouletteTheme")==="night"?"night":"day");$("clearHistory").onclick=async()=>{
+$("tol").onchange=render;function applyTheme(mode, save=true){
+  const m=mode==="night"?"night":"day";
+  document.body.classList.toggle("night",m==="night");
+  $("theme").textContent=m==="night"?"☀":"☾";
+  if(save) localStorage.setItem("rouletteTheme",m);
+}
+let savedTheme="day";
+try{savedTheme=localStorage.getItem("rouletteTheme")==="night"?"night":"day"}catch(e){}
+applyTheme(savedTheme,false);
+$("theme").onclick=()=>applyTheme(document.body.classList.contains("night")?"day":"night");$("clearHistory").onclick=async()=>{
   if(!confirm("¿Borrar TODO el historial, predicciones y aprendizaje local? Esta acción no se puede deshacer."))return;
   await new Promise((ok,no)=>{let t=db.transaction(["spins","predictions"],"readwrite");t.objectStore("spins").clear();t.objectStore("predictions").clear();t.oncomplete=ok;t.onerror=()=>no(t.error)});
   render();
 };
 $("undo").onclick=async()=>{let s=(await all("spins")).sort((a,b)=>(a.createdAt||"").localeCompare(b.createdAt||"")||((a.id||0)-(b.id||0)));if(s.length){let x=s.at(-1);await del("spins",x.id);if(x.predictionId)await del("predictions",x.predictionId);render()}};$("txt").onclick=async()=>{let s=(await all("spins")).sort((a,b)=>a.id-b.id),l=s.map((x,i)=>{let p=i?s[i-1].result:null;return(i+1)+" | "+x.result+" | "+(p==null?"":jump(p,x.result))+" | "+(p==null?"":dir(p,x.result))}).join("\\n"),a=document.createElement("a");a.href=URL.createObjectURL(new Blob([l],{type:"text/plain"}));a.download="roulette-history-v8.txt";a.click()};$("json").onclick=async()=>{let d={schemaVersion:8,spins:await all("spins"),predictions:await all("predictions"),wheel:W},a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(d,null,2)],{type:"application/json"}));a.download="roulette-pattern-lab-v8.json";a.click()};$("restoreBtn").onclick=()=>$("restore").click();$("restore").onchange=async e=>{let d=JSON.parse(await e.target.files[0].text());if(!confirm("Reemplazar histórico?"))return;let t=db.transaction(["spins","predictions"],"readwrite");t.objectStore("spins").clear();t.objectStore("predictions").clear();t.oncomplete=async()=>{for(let x of d.spins||[])await put("spins",x);for(let x of d.predictions||[])await put("predictions",x);render()}};
-(async()=>{try{await open();$("db").textContent="DB OK"}catch(e){$("db").textContent="DB ERROR";return}for(let n=0;n<=36;n++){let b=document.createElement("button");b.textContent=n;b.className=col(n);b.onclick=()=>add(n);$("numbers").appendChild(b)}await render()})()
+function buildNumberButtons(){
+  const box=$("numbers");
+  box.innerHTML="";
+  for(let n=0;n<=36;n++){
+    const b=document.createElement("button");
+    b.type="button"; b.textContent=String(n); b.className=col(n);
+    b.addEventListener("click",()=>add(n));
+    box.appendChild(b);
+  }
+}
+(async()=>{
+  buildNumberButtons();
+  try{
+    await open();$("db").textContent="DB OK";await render();
+  }catch(e){
+    $("db").textContent="DB ERROR";
+    $("learning").textContent="No se pudo abrir la base de datos: "+e.message;
+  }
+})()

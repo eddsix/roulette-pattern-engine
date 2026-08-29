@@ -3,3 +3,5 @@ button{transition:transform .09s ease,opacity .09s ease,box-shadow .09s ease}
 button:active{transform:scale(.94);opacity:.78}
 .numbers button:active{transform:scale(.90)}
 .danger{border-color:#fecaca!important}
+
+#numbersStatus{grid-column:1/-1;font-size:12px;color:#6b7280;padding:8px} .numbers button{cursor:pointer;display:block;visibility:visible;opacity:1}
