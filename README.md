@@ -49,3 +49,13 @@ This is an experimental statistical research tool and does not demonstrate futur
 - Latest results, recent jumps and recent directions each have an isolated viewport, native touch/pointer drag and previous/next controls.
 - Prediction history remains a bounded vertical scroll container.
 - Removed dependence on free-flowing horizontal flex overflow for those three areas.
+
+
+## v10.5
+- Hard-disabled horizontal overflow at document and app level.
+- Added `min-width:0` / `minmax(0,...)` to responsive grids.
+- Cards and grid children are now width-contained.
+- Long pattern text wraps instead of expanding the page.
+- Carousel viewports use layout/paint containment.
+- Added a runtime viewport-width check during render and resize.
+- Horizontal movement is restricted to the dedicated carousel viewports.
