@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0b1220">
-<title>Roulette Pattern Lab — v10.6</title>
+<title>Roulette Pattern Lab — v10.7</title>
 <style>
 :root{
  --bg:#f4f6fa;--panel:#fff;--text:#111827;--muted:#667085;--line:#e5e7eb;
@@ -60,7 +60,7 @@ input[type=file]{display:none}
 <body>
 <main class="app">
 <header class="topbar">
-  <div class="brand"><h1>Roulette Pattern Lab</h1><p>Pattern Intelligence Engine · v10.6</p></div>
+  <div class="brand"><h1>Roulette Pattern Lab</h1><p>Pattern Intelligence Engine · v10.7</p></div>
   <div class="toolbar">
     <button class="iconbtn" id="themeBtn" type="button">Modo noche</button>
     <select class="select" id="tol"><option value="1">±1</option><option value="2">±2</option><option value="3" selected>±3</option><option value="4">±4</option><option value="5">±5</option><option value="6">±6</option><option value="7">±7</option><option value="8">±8</option><option value="9">±9</option></select>
@@ -292,7 +292,7 @@ function render(){
  }
  $("r0").textContent=pct(bt.hit[0],bt.n);$("r3").textContent=pct(bt.hit[3],bt.n);$("r5").textContent=pct(bt.hit[5],bt.n);$("r9").textContent=pct(bt.hit[9],bt.n);$("winRate").textContent=pct(bt.hit[tol],bt.n);const base=(2*tol+1)/37;$("baseline").textContent=(base*100).toFixed(1)+"%";$("vsBase").textContent=bt.n?(((bt.hit[tol]/bt.n-base)*100>=0?"+":"")+((bt.hit[tol]/bt.n-base)*100).toFixed(1)+" pp"):"—";$("dirAcc").textContent=pct(bt.dir,bt.n);
  $("predHistory").innerHTML=state.predictions.filter(x=>x.prediction&&x.actual!=null).slice(-35).reverse().map(x=>{const win=dist(x.prediction.target,x.actual)<=tol;return "<div class='predRow'><b>#"+x.spinIndex+"</b><span>"+x.prediction.target+" → "+x.actual+" · "+dist(x.prediction.target,x.actual)+"p</span><span>"+(x.prediction.predDir||"—")+"</span><b class='"+(win?"win":"loss")+"'>"+(win?"WIN":"LOSS")+"</b></div>"}).join("")||"—";
- drawChart(h);checkLayout();
+ drawChart(h);
 
  }catch(err){ console.error(err); $("storageStatus").textContent="ERROR: "+err.message; }
 }
@@ -306,8 +306,14 @@ if(localStorage.getItem("roulettePatternLab.theme")==="night"){document.body.cla
 $("tol").addEventListener("change",render);$("chartWindow").addEventListener("change",()=>drawChart(state.spins.map(x=>Number(x.result))));
 $("undo").addEventListener("click",undo);$("txt").addEventListener("click",exportTxt);$("json").addEventListener("click",backup);$("clear").addEventListener("click",clearAll);
 $("restoreBtn").addEventListener("click",()=>$("restore").click());$("restore").addEventListener("change",e=>e.target.files[0]&&restoreFile(e.target.files[0]));
-window.addEventListener("resize",()=>{drawChart(state.spins.map(x=>Number(x.result)));checkLayout()});
+window.addEventListener("resize",()=>{drawChart(state.spins.map(x=>Number(x.result)))});
 render();
 })();
+
+window.addEventListener("error",e=>{
+  const el=$("storageStatus");
+  if(el && e.error) el.textContent="ERROR JS";
+  console.error(e.error||e.message);
+});
 </script>
 </body></html>

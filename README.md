@@ -67,3 +67,11 @@ This is an experimental statistical research tool and does not demonstrate futur
 - Latest results, recent jumps and recent directions now use native horizontal touch scrolling directly in their own bounded boxes.
 - Prediction history remains a bounded vertical native scroll area.
 - The page itself remains horizontally locked.
+
+
+## v10.7
+- Removed the faulty `checkLayout()` call and function completely.
+- Verified JavaScript syntax.
+- Verified that every `$()` DOM reference has a corresponding element.
+- Preserved native horizontal touch scrolling for the three history boxes.
+- Added a non-blocking global JavaScript error indicator for future diagnostics.
