@@ -1,26 +1,23 @@
-# Roulette Pattern Lab v7.0
+# Roulette Pattern Lab v8.0
 
-Nueva versión completa del motor.
+Major upgrade focused on pattern intelligence.
 
-- Rueda europea de 37 pockets.
-- Salto firmado y distancia circular.
-- CW/CCW por camino más corto.
-- Historial de saltos y direcciones.
-- Matriz de transición desde el pocket actual.
-- Aprendizaje condicional del siguiente salto.
-- Aprendizaje condicional de la siguiente dirección.
-- Patrones conjuntos salto+dirección.
-- Patrones de saltos.
-- Patrones de pares de pockets.
-- Ranking de los 37 pockets.
-- Probabilidad empírica por pocket.
-- Salto esperado y dirección prevista.
-- Backtest walk-forward sin fuga de información.
-- Exact, ±1, ±2, ±3, ±4 y ±5.
-- Precisión histórica de dirección.
-- Persistencia en IndexedDB.
-- Exportación TXT y JSON.
+- Historical repeated sequences, length 2–10.
+- Alerts when a sequence currently being formed has appeared before.
+- Historical next-result distribution for activated sequences.
+- Jump patterns.
+- Joint jump + direction patterns.
+- Current-pocket transition matrix.
+- CW/CCW conditioning.
+- All 37 pockets ranked.
+- Empirical target probability.
+- Integer most-probable jump plus expected jump as secondary statistic.
+- Configurable ±1 through ±9.
+- WIN/LOSS per prediction.
+- European roulette colors.
+- Day/night mode.
+- Dashboard and walk-forward backtest.
+- TXT and JSON backups.
+- Existing IndexedDB name retained: RoulettePatternLabV4.
 
-La base IndexedDB mantiene el nombre RoulettePatternLabV4 para conservar el histórico de versiones anteriores.
-
-El modelo es experimental y no demuestra que los resultados de una ruleta sean predecibles.
+Pattern recognition is experimental and does not establish future predictability.
