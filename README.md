@@ -35,3 +35,10 @@ This is an experimental statistical research tool and does not demonstrate futur
 - Fixed horizontal scrolling of recent results and jump/direction strips on mobile.
 - Added native horizontal touch scrolling plus a drag fallback.
 - Added mobile overscroll/touch behavior so the strip can be swiped without requiring a scrollbar.
+
+
+## v10.3
+- Recent results, recent jumps and recent directions are now bounded horizontal swipe boxes.
+- Prediction history is now a bounded vertical swipe box.
+- Removed the custom pointer-drag implementation that interfered with normal mobile scrolling.
+- Added native touch scrolling, momentum scrolling and scroll snapping.

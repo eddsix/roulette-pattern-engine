@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0b1220">
-<title>Roulette Pattern Lab — v10.2</title>
+<title>Roulette Pattern Lab — v10.3</title>
 <style>
 :root{
  --bg:#f4f6fa;--panel:#fff;--text:#111827;--muted:#667085;--line:#e5e7eb;
@@ -33,18 +33,18 @@ button{cursor:pointer}
 .wheelZone{font-size:12px;color:var(--muted);line-height:1.5}
 .sectionHead{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px}
 .sectionHead h2{font-size:15px;margin:0}.counter{font-weight:800;font-size:13px;color:var(--muted)}
-.history{display:flex;gap:7px;overflow-x:auto;overflow-y:hidden;padding:2px 1px 7px;white-space:nowrap;touch-action:pan-x;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
-.result{min-width:42px;height:42px;border-radius:50%;display:grid;place-items:center;font-weight:850;color:#fff;box-shadow:0 1px 2px #0003}
+.history{display:flex;gap:7px;overflow-x:auto;overflow-y:hidden;padding:4px 2px 9px;white-space:nowrap;touch-action:pan-x;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;cursor:grab;min-width:0;max-width:100%;border:1px solid var(--line);border-radius:12px;background:var(--soft)} .history:active{cursor:grabbing}
+.result{flex:0 0 auto;scroll-snap-align:start;min-width:42px;height:42px;border-radius:50%;display:grid;place-items:center;font-weight:850;color:#fff;box-shadow:0 1px 2px #0003}
 .red{background:#d92d20}.black{background:#111827}.green{background:#0f8a61}
 .transitionGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 .statbox{background:var(--soft);border-radius:12px;padding:10px}.statbox span{display:block;color:var(--muted);font-size:10px}.statbox b{font-size:18px}
-.horizontal{display:flex;gap:7px;overflow-x:auto;overflow-y:hidden;margin-top:7px;padding-bottom:4px;white-space:nowrap;touch-action:pan-x;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;scrollbar-width:thin}.chip{white-space:nowrap;padding:7px 9px;border:1px solid var(--line);border-radius:10px;font-size:11px;background:var(--panel)}
+.horizontal{display:flex;gap:7px;overflow-x:auto;overflow-y:hidden;margin-top:7px;padding:6px 4px 8px;white-space:nowrap;touch-action:pan-x;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;cursor:grab;min-width:0;max-width:100%;border:1px solid var(--line);border-radius:10px;background:var(--soft)} .horizontal:active{cursor:grabbing}.chip{flex:0 0 auto;scroll-snap-align:start;white-space:nowrap;padding:7px 9px;border:1px solid var(--line);border-radius:10px;font-size:11px;background:var(--panel)}
 .numbers{display:grid;grid-template-columns:repeat(10,1fr);gap:7px}.num{min-height:46px;border:1px solid #d7dce4;border-radius:11px;font-weight:850;color:#fff;transition:transform .11s ease,filter .11s ease,box-shadow .11s ease}.num.red{background:#d92d20}.num.black{background:#111827}.num.green{background:#0f8a61}.num.pressed{transform:scale(.89);filter:brightness(.84);box-shadow:0 2px 7px #0004}
 .actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}.action{flex:1;min-width:120px;min-height:44px;border:1px solid var(--line);border-radius:11px;background:var(--panel);color:var(--text);font-weight:750}.danger{border-color:#f3b3b3;color:#b42318}
 .grid2{display:grid;grid-template-columns:1.15fr .85fr;gap:12px}
 .ranking{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.rank{border:1px solid var(--line);border-radius:12px;padding:9px}.rankTop{display:flex;justify-content:space-between;gap:8px;font-size:12px}.rankNum{font-size:18px;font-weight:900}.rankPct{font-weight:800}.bar{height:6px;margin-top:7px;background:#e9edf3;border-radius:999px;overflow:hidden}.bar i{display:block;height:100%;background:var(--accent)}
 .alert{padding:10px 12px;border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:12px;margin:7px 0;font-size:12px;line-height:1.55;background:var(--soft)}
-.win{color:var(--good);font-weight:850}.loss{color:var(--bad);font-weight:850}
+.win{color:var(--good);font-weight:850}.loss{color:var(--bad);font-weight:850}#predHistory{max-height:310px;overflow-y:auto;overflow-x:hidden;touch-action:pan-y;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:12px;padding:0 10px;background:var(--soft);min-width:0}
 .predRow{display:grid;grid-template-columns:44px 1fr 80px 62px;gap:7px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);font-size:12px}
 .details{font-size:12px;line-height:1.6}.details div{padding:5px 0;border-bottom:1px solid var(--line)}
 .statsGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.statsGrid .statbox b{font-size:20px}
@@ -58,7 +58,7 @@ input[type=file]{display:none}
 <body>
 <main class="app">
 <header class="topbar">
-  <div class="brand"><h1>Roulette Pattern Lab</h1><p>Pattern Intelligence Engine · v10.2</p></div>
+  <div class="brand"><h1>Roulette Pattern Lab</h1><p>Pattern Intelligence Engine · v10.3</p></div>
   <div class="toolbar">
     <button class="iconbtn" id="themeBtn" type="button">Modo noche</button>
     <select class="select" id="tol"><option value="1">±1</option><option value="2">±2</option><option value="3" selected>±3</option><option value="4">±4</option><option value="5">±5</option><option value="6">±6</option><option value="7">±7</option><option value="8">±8</option><option value="9">±9</option></select>
@@ -267,20 +267,6 @@ function drawChart(h){
 
 
 
-function enableHorizontalTouchScroll(el){
-  let down=false,startX=0,startScroll=0,moved=false;
-  el.addEventListener("pointerdown",e=>{
-    if(e.pointerType==="mouse" && e.button!==0)return;
-    down=true;moved=false;startX=e.clientX;startScroll=el.scrollLeft;
-  },{passive:true});
-  el.addEventListener("pointermove",e=>{
-    if(!down)return;
-    const dx=e.clientX-startX;
-    if(Math.abs(dx)>4)moved=true;
-    if(moved)el.scrollLeft=startScroll-dx;
-  },{passive:true});
-  ["pointerup","pointercancel","pointerleave"].forEach(ev=>el.addEventListener(ev,()=>{down=false},{passive:true}));
-}
 
 function render(){
  try{
@@ -310,7 +296,7 @@ function buildButtons(){
  const box=$("numbers");box.innerHTML="";
  for(let n=0;n<=36;n++){const b=document.createElement("button");b.type="button";b.textContent=String(n);b.className="num "+color(n);b.addEventListener("pointerdown",()=>press(b));b.addEventListener("click",()=>addSpin(n));box.appendChild(b)}
 }
-load();buildButtons();enableHorizontalTouchScroll($("history"));enableHorizontalTouchScroll($("jumpHistory"));enableHorizontalTouchScroll($("directionHistory"));$("storageStatus").textContent="LOCAL OK";
+load();buildButtons();$("storageStatus").textContent="LOCAL OK";
 $("themeBtn").addEventListener("click",()=>{document.body.classList.toggle("night");const on=document.body.classList.contains("night");localStorage.setItem("roulettePatternLab.theme",on?"night":"day");$("themeBtn").textContent=on?"Modo día":"Modo noche"});
 if(localStorage.getItem("roulettePatternLab.theme")==="night"){document.body.classList.add("night");$("themeBtn").textContent="Modo día"}
 $("tol").addEventListener("change",render);$("chartWindow").addEventListener("change",()=>drawChart(state.spins.map(x=>Number(x.result))));
