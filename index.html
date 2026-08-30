@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Roulette Pattern Lab v13.0</title>
+<title>Roulette Pattern Lab v13.3</title>
 <style>
 :root{--bg:#f5f7fa;--card:#fff;--text:#17202a;--muted:#687385;--line:#dfe4ea;--accent:#315efb;--soft:#eef2f7;--green:#16834b;--red:#c83232;--amber:#8a6400}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif}body.night{--bg:#0e1218;--card:#171c24;--text:#edf2f7;--muted:#9aa7b5;--line:#2a333f;--soft:#202833}
@@ -15,7 +15,7 @@
 <body>
 <div class="app">
 <header class="top">
-  <div class="brand"><h1>Roulette Pattern Lab <span class="muted">v13.2</span></h1><p>Adaptive Pattern Engine · walk-forward limpio · señales calibradas</p></div>
+  <div class="brand"><h1>Roulette Pattern Lab <span class="muted">v13.3</span></h1><p>Adaptive Pattern Engine · walk-forward limpio · señales calibradas</p></div>
   <div class="actions">
     <button class="btn" id="theme">Modo noche</button>
     <button class="btn" id="undo">Deshacer</button>
@@ -58,22 +58,23 @@
 <section class="card"><div class="head"><h2>Patrones activos</h2></div><div id="alerts"></div></section>
 
 <section class="card wide"><div class="head"><h2>Pesos adaptativos</h2><span class="muted">aprendizaje walk-forward</span></div><div id="weights" class="weights"></div><p id="weightSummary" class="muted"></p></section>
+<section class="card wide"><div class="head"><h2>Diagnóstico del aprendizaje</h2><span class="muted">recencia · consenso · control de sobreajuste</span></div><div class="kpi"><div class="k"><span>Edge robusto</span><b id="robustEdge">—</b></div><div class="k"><span>Consenso</span><b id="consensus">—</b></div><div class="k"><span>Estabilidad</span><b id="stability">—</b></div></div><p id="learningSummary" class="muted"></p></section>
 <section class="card"><div class="head"><h2>Historial de predicciones</h2></div><div id="predHistory" class="rows"></div></section>
 <section class="card"><div class="head"><h2>Biblioteca de patrones</h2></div><div id="library" class="rows"></div></section>
 
 <section class="card wide"><div class="head"><h2>Rendimiento ± tolerancia</h2><div class="controls"><span class="muted">Ventana</span><select id="chartWindow"><option value="30">30</option><option value="60" selected>60</option><option value="120">120</option></select></div></div><div class="chartwrap"><canvas id="chart"></canvas></div></section>
 </div>
-<div class="foot">v13.0 · El modelo detecta patrones históricos y genera señales relativas. No implica una ventaja garantizada sobre una ruleta justa.</div>
+<div class="foot">v13.3 · Aprendizaje walk-forward con recencia, meta-consenso y control conservador del sobreajuste. No implica una ventaja garantizada sobre una ruleta justa.</div>
 </div>
 
 <script>
 (function(){
 "use strict";
-const KEY="roulettePatternLab.v13";
+const KEY="roulettePatternLab.v13.3";
 const W=[0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
 const RED=new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
 const FAMILIES=["sequence","joint","jump","pair","transition"];
-let S={version:"13.2",spins:[],predictions:[],settings:{tol:3,chartWindow:60}};
+let S={version:"13.3",spins:[],predictions:[],settings:{tol:3,chartWindow:60}};
 const cache=new Map();
 const $=id=>document.getElementById(id);
 const idx=n=>W.indexOf(Number(n));
@@ -88,7 +89,7 @@ const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 
 function normalize(raw){
   const spins=Array.isArray(raw?.spins)?raw.spins.map((x,i)=>({id:Number(x.id)||i+1,result:Number(x.result),createdAt:x.createdAt||new Date().toISOString()})).filter(x=>x.result>=0&&x.result<=36):[];
-  return {version:"13.2",spins,predictions:Array.isArray(raw?.predictions)?raw.predictions:[],settings:{tol:Number(raw?.settings?.tol)||3,chartWindow:Number(raw?.settings?.chartWindow)||60}};
+  return {version:"13.3",spins,predictions:Array.isArray(raw?.predictions)?raw.predictions:[],settings:{tol:Number(raw?.settings?.tol)||3,chartWindow:Number(raw?.settings?.chartWindow)||60}};
 }
 function load(){
   try{let x=JSON.parse(localStorage.getItem(KEY)||"null");if(x&&Array.isArray(x.spins)){S=normalize(x);return}}catch(e){}
@@ -138,64 +139,101 @@ function weightedFamilyTarget(h,f){
   let best=0;for(let n=1;n<37;n++)if(q[n]>q[best])best=n;
   return q[best]?best:null;
 }
+function familyTargetAt(h,f){return weightedFamilyTarget(h,f)}
+function binomialRobustEdge(hit,n,tol){
+  if(!n)return 0;
+  const ph=hit/n, se=Math.sqrt(Math.max(0,ph*(1-ph)/n));
+  return ph-baseline(tol)-1.96*se;
+}
 function familyBacktest(h,f,tol=3){
-  if(h.length<14)return {n:0,hit:0,exact:0,edge:0};
-  const start=Math.max(12,h.length-90);let n=0,hit=0,exact=0;
-  for(let i=start;i<h.length;i++){const t=weightedFamilyTarget(h.slice(0,i),f);if(t==null)continue;n++;if(dist(t,h[i])===0)exact++;if(dist(t,h[i])<=tol)hit++}
-  const b=baseline(tol);return {n,hit,exact,edge:n?(hit/n-b):0};
+  if(h.length<14)return {n:0,hit:0,exact:0,edge:0,recentEdge:0,robustEdge:0,stability:0};
+  const start=Math.max(12,h.length-120), rows=[];
+  for(let i=start;i<h.length;i++){
+    const t=familyTargetAt(h.slice(0,i),f);if(t==null)continue;
+    rows.push({hit:dist(t,h[i])<=tol,exact:dist(t,h[i])===0});
+  }
+  const n=rows.length,hit=rows.filter(x=>x.hit).length,exact=rows.filter(x=>x.exact).length;
+  if(!n)return {n:0,hit:0,exact:0,edge:0,recentEdge:0,robustEdge:0,stability:0};
+  const recent=rows.slice(-Math.min(20,n)), rh=recent.filter(x=>x.hit).length;
+  const edge=hit/n-baseline(tol),recentEdge=rh/recent.length-baseline(tol),robustEdge=binomialRobustEdge(hit,n,tol);
+  const agreement=1-Math.min(1,Math.abs(edge-recentEdge)/Math.max(0.05,Math.abs(edge)+0.02));
+  return {n,hit,exact,edge,recentEdge,robustEdge,stability:clamp(agreement,0,1)};
+}
+function metaBacktest(h,tol=3){
+  const combos={};
+  for(let i=Math.max(14,h.length-120);i<h.length;i++){
+    const hh=h.slice(0,i), targets={};
+    FAMILIES.forEach(f=>targets[f]=familyTargetAt(hh,f));
+    const active=FAMILIES.filter(f=>targets[f]!=null);
+    for(let a=0;a<active.length;a++)for(let b=a+1;b<active.length;b++){
+      const key=active[a]+'+'+active[b],same=targets[active[a]]===targets[active[b]];
+      if(!same)continue;
+      if(!combos[key])combos[key]={n:0,hit:0};combos[key].n++;if(dist(targets[active[a]],h[i])<=tol)combos[key].hit++;
+    }
+  }
+  const out={};Object.entries(combos).forEach(([k,v])=>out[k]={...v,edge:v.hit/v.n-baseline(tol),robustEdge:binomialRobustEdge(v.hit,v.n,tol)});return out;
 }
 function adaptive(h,tol=3){
-  const perf={};const weights={};
+  const perf={},weights={};
   FAMILIES.forEach(f=>{
     const p=familyBacktest(h,f,tol);perf[f]=p;
-    const sample=Math.min(1,p.n/40);
-    const edgeBoost=clamp(1+p.edge*5,-0.5,1.5);
-    weights[f]=clamp(1+0.75*sample*(edgeBoost-1),0.45,1.75);
+    const sample=clamp(p.n/50,0,1),robust=p.robustEdge;
+    const recency=clamp(1+p.recentEdge*4,0.65,1.35);
+    const stability=0.75+0.25*p.stability;
+    weights[f]=clamp(0.65+0.75*sample*clamp(1+robust*6,0.45,1.6)*recency*stability,0.45,1.9);
   });
-  return {perf,weights};
+  return {perf,weights,meta:metaBacktest(h,tol)};
 }
 function model(h,tol=3){
   if(h.length<12)return null;
   const a=adaptive(h,tol),score=Array(37).fill(0.02),support=Array(37).fill(0),signals=[];
+  const familyTargets={};
   for(const f of FAMILIES){
-    const w=a.weights[f],cs=candidates(h,f);
+    const w=a.weights[f],cs=candidates(h,f),ft=weightedFamilyTarget(h,f);familyTargets[f]=ft;
     cs.slice(0,5).forEach(q=>{
       const lenBoost=q.len>=6?1.28:q.len>=4?1.13:1;
       const occBoost=clamp(Math.log2(q.occ+1)/2,0.5,1.35);
-      const localW=w*lenBoost*occBoost;
-      const seen=new Set(q.next);
-      q.next.forEach(n=>score[idx(n)]+=localW*(1/Math.max(1,q.next.length)));
-      seen.forEach(n=>support[idx(n)]++);
+      const sampleConfidence=clamp(q.occ/6,0.35,1);
+      const localW=w*lenBoost*occBoost*sampleConfidence;
+      const unique=[...new Set(q.next)];
+      unique.forEach(n=>{score[idx(n)]+=localW/Math.max(1,unique.length);support[idx(n)]++});
       signals.push({f,key:q.key,occ:q.occ,w:localW,next:q.next});
     });
   }
-  // Recent transition continuation model, without reading S.predictions.
-  const last=h.at(-1), row=Array(37).fill(0);
+  // Meta-learning: reward agreement between independently trained families only
+  // when that combination has demonstrated positive out-of-sample performance.
+  Object.entries(a.meta).forEach(([key,m])=>{
+    if(m.n<5||m.robustEdge<=0)return;
+    const fs=key.split('+'),target=familyTargets[fs[0]];
+    if(target!=null&&familyTargets[fs[1]]===target){
+      score[idx(target)]+=clamp(m.robustEdge*18,0.05,0.65);support[idx(target)]+=0.5;
+    }
+  });
+  const last=h.at(-1),row=Array(37).fill(0);
   for(let i=0;i<h.length-1;i++)if(h[i]===last)row[idx(h[i+1])]++;
-  const rz=row.reduce((x,y)=>x+y,0);if(rz){for(let n=0;n<37;n++)if(row[n])score[n]+=1.05*(row[n]/rz)}
-  // Mild recency penalty only from current historical sample; no future/prediction-log leakage.
+  const rz=row.reduce((x,y)=>x+y,0);if(rz)for(let n=0;n<37;n++)if(row[n])score[n]+=1.05*(row[n]/rz);
   const recent=h.slice(-8),cnt=new Map();recent.forEach(n=>cnt.set(n,(cnt.get(n)||0)+1));
   for(let n=0;n<37;n++){const c=cnt.get(n)||0;if(c>=3)score[n]*=(c===3?0.88:c===4?0.78:0.68)}
-  // Do not let the natural array order make pocket 0 the default when
-  // all candidates have effectively the same score.
-  const evidence=score.some((v,n)=>v>0.0200001 && (support[n]>0 || row[n]>0));
-  const ranked=score.map((v,n)=>({n,v,support:support[n],transition:row[n]})).sort((a,b)=>
-    b.v-a.v || b.support-a.support || b.transition-a.transition
-  );
-  const sum=ranked.reduce((x,y)=>x+y.v,0);const r=ranked.map(x=>({...x,p:x.v/sum}));
+  const evidence=score.some((v,n)=>v>0.0200001&&(support[n]>0||row[n]>0));
+  const ranked=score.map((v,n)=>({n,v,support:support[n],transition:row[n]})).sort((a,b)=>b.v-a.v||b.support-a.support||b.transition-a.transition);
+  const sum=ranked.reduce((x,y)=>x+y.v,0),r=ranked.map(x=>({...x,p:x.v/sum}));
   const top=r[0],second=r[1],lead=top.p-second.p;
   let cw=0,ccw=0;for(const x of r){const j=jmp(last,x.n);if(j>0)cw+=x.p;else if(j<0)ccw+=x.p}
   const active=FAMILIES.filter(f=>a.perf[f].n>0).length;
-  const avgEdge=active?FAMILIES.reduce((s,f)=>s+(a.perf[f].n?a.perf[f].edge:0),0)/active:0;
-  const edge=top.p-baseline(tol);
+  const edges=FAMILIES.map(f=>a.perf[f].n?a.perf[f].robustEdge:0).filter(x=>x!==0);
+  const avgRobust=edges.length?edges.reduce((s,x)=>s+x,0)/edges.length:0;
+  const recentEdges=FAMILIES.map(f=>a.perf[f].n?a.perf[f].recentEdge:0).filter(x=>x!==0);
+  const avgRecent=recentEdges.length?recentEdges.reduce((s,x)=>s+x,0)/recentEdges.length:0;
+  const edge=top.p-baseline(tol), robustEdge=edge-1.96*Math.sqrt(Math.max(0,top.p*(1-top.p)/Math.max(1,Math.round(active*20))));
   const supportPct=clamp(top.support/Math.max(1,active),0,1);
-  const confidence=Math.round(clamp(35+lead*900+supportPct*30+clamp(avgEdge*500,-10,25),5,99));
-  const signal=!evidence?"NONE":active<2||confidence<45||edge<0.005?"NONE":confidence>=72&&edge>=0.02?"HIGH":"LOW";
-  // No evidence = no prediction. This prevents 0 from appearing simply because
-  // it is the first element of the wheel array.
+  const consensusCount=Object.values(familyTargets).filter(x=>x===top.n).length;
+  const consensus=active?consensusCount/active:0;
+  const stability=clamp(1-Math.abs(avgRobust-avgRecent)/Math.max(0.05,Math.abs(avgRobust)+0.02),0,1);
+  const confidence=Math.round(clamp(30+lead*900+supportPct*25+consensus*25+stability*10+clamp(avgRobust*500,-10,25),5,99));
+  const signal=!evidence||active<2||confidence<45||edge<0.005||robustEdge<=0?'NONE':confidence>=72&&robustEdge>=0.01?'HIGH':'LOW';
   const target=evidence?top.n:null;
-  const jump=target==null||h.length===0?null:jmp(h.at(-1),target);
-  return {target,prob:evidence?top.p:0,ranking:r.slice(0,12),predDir:cw>=ccw?"CW":"CCW",cw,ccw,adaptive:a,signals,seq:candidates(h,"sequence").slice(0,4),joint:candidates(h,"joint").slice(0,3),jumps:candidates(h,"jump").slice(0,3),edge,confidence,signal,lead,avgEdge,activeModels:active,jump};
+  const jump=target==null?null:jmp(last,target);
+  return {target,prob:evidence?top.p:0,ranking:r.slice(0,12),predDir:cw>=ccw?'CW':'CCW',cw,ccw,adaptive:a,signals,seq:candidates(h,'sequence').slice(0,4),joint:candidates(h,'joint').slice(0,3),jumps:candidates(h,'jump').slice(0,3),edge,robustEdge,confidence,signal,lead,avgEdge:avgRobust,avgRecent,stability,consensusCount,activeModels:active,jump};
 }
 function walkForward(h,tol=3){
   const key=h.join(",")+"|"+tol;if(cache.has(key))return cache.get(key);
@@ -225,7 +263,7 @@ function add(n){
   rebuildPredictions();save();render();
 }
 function undo(){if(!S.spins.length)return;S.spins.pop();rebuildPredictions();cache.clear();save();render()}
-function clearAll(){if(confirm("¿Borrar todo el histórico?")){S={version:"13.2",spins:[],predictions:[],settings:{tol:3,chartWindow:60}};cache.clear();save();render()}}
+function clearAll(){if(confirm("¿Borrar todo el histórico?")){S={version:"13.3",spins:[],predictions:[],settings:{tol:3,chartWindow:60}};cache.clear();save();render()}}
 function esc(x){return String(x).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
 function render(){
   const h=S.spins.map(x=>Number(x.result)),t=trans(h),p=model(h,S.settings.tol),bt=backtest(h,S.settings.tol),tol=S.settings.tol;
@@ -243,10 +281,10 @@ function render(){
     $('confidence').textContent=p.confidence+"/100";$('edge').textContent=(p.edge*100>=0?'+':'')+(p.edge*100).toFixed(1)+" pp";$('support').textContent=p.activeModels+"/"+FAMILIES.length;
     $('ranking').innerHTML=p.ranking.map((x,i)=>`<div class="rank"><div class="ranktop"><span>#${i+1} · ${x.n} ${x.support?`· ${x.support} modelos`:''}</span><b>${(x.p*100).toFixed(2)}%</b></div><div class="bar"><i style="width:${Math.max(2,100*x.p/p.ranking[0].p)}%"></i></div></div>`).join('');
     $('alerts').innerHTML=[...p.seq,...p.joint,...p.jumps].slice(0,7).map(q=>`<div class="alert"><b>${q.type==='sequence'?'SECUENCIA':q.type==='joint'?'SALTO + DIRECCIÓN':'PATRÓN DE SALTOS'}</b><br>${esc(q.key).replaceAll(',',' → ')} · ${q.occ} coincidencias · siguientes: ${q.next.join(', ')}</div>`).join('')||'<span class="muted">No hay patrón repetido suficiente.</span>';
-    $('weights').innerHTML=FAMILIES.map(k=>{const v=p.adaptive.weights[k],q=p.adaptive.perf[k];return `<div class="weight"><span class="muted">${k}</span><br><b>${v.toFixed(2)}×</b><div class="muted">${q.n} tests · ±${tol}: ${pct(q.hit,q.n)} · edge ${q.n?(q.edge*100).toFixed(1):'—'} pp</div></div>`}).join('');
+    $('weights').innerHTML=FAMILIES.map(k=>{const v=p.adaptive.weights[k],q=p.adaptive.perf[k];return `<div class="weight"><span class="muted">${k}</span><br><b>${v.toFixed(2)}×</b><div class="muted">${q.n} tests · ±${tol}: ${pct(q.hit,q.n)} · edge ${q.n?(q.edge*100).toFixed(1):'—'} pp · reciente ${q.n?(q.recentEdge*100).toFixed(1):'—'} pp · robusto ${q.n?(q.robustEdge*100).toFixed(1):'—'} pp</div></div>`}).join('');
     $('weightSummary').textContent="Los pesos usan únicamente información disponible antes de cada spin evaluado; no se consultan predicciones futuras ni el log completo durante el backtest.";
   }else{
-    $("target").textContent="—";$("target").className="target black";$("prob").textContent="—";$('signal').textContent=h.length<12?'ESPERANDO DATOS':'SIN SEÑAL';$('signal').className='signal';$('predDir').textContent='Dirección: —';$('predJump').textContent='Salto previsto: —';$('zone').textContent=h.length<12?'Se necesitan al menos 12 spins':'—';$('confidence').textContent='—';$('edge').textContent='—';$('support').textContent='—';$('ranking').innerHTML='';$('alerts').innerHTML=h.length<12?'Se necesitan al menos 12 spins.':'—';$('weights').innerHTML=FAMILIES.map(k=>`<div class="weight"><span class="muted">${k}</span><br><b>—</b><div class="muted">Sin muestra</div></div>`).join('');$('weightSummary').textContent='';
+    $("target").textContent="—";$("target").className="target black";$("prob").textContent="—";$('signal').textContent=h.length<12?'ESPERANDO DATOS':'SIN SEÑAL';$('signal').className='signal';$('predDir').textContent='Dirección: —';$('predJump').textContent='Salto previsto: —';$('zone').textContent=h.length<12?'Se necesitan al menos 12 spins':'—';$('confidence').textContent='—';$('edge').textContent='—';$('support').textContent='—';$('robustEdge').textContent='—';$('consensus').textContent='—';$('stability').textContent='—';$('learningSummary').textContent='';$('ranking').innerHTML='';$('alerts').innerHTML=h.length<12?'Se necesitan al menos 12 spins.':'—';$('weights').innerHTML=FAMILIES.map(k=>`<div class="weight"><span class="muted">${k}</span><br><b>—</b><div class="muted">Sin muestra</div></div>`).join('');$('weightSummary').textContent='';
   }
   const mem=patternMemory(h);$('library').innerHTML=Object.values(mem).sort((a,b)=>b.occ-a.occ).slice(0,40).map(v=>`<div class="prow" style="grid-template-columns:1fr"><span><b>${esc(v.type)}|${esc(v.key)}</b> · ${v.occ} coincidencias · ${Object.entries(v.next).sort((a,b)=>b[1]-a[1]).map(x=>x[0]+"("+x[1]+")").join(', ')}</span></div>`).join('')||'—';
   $('predHistory').innerHTML=S.predictions.slice(-60).reverse().map(x=>{
@@ -269,8 +307,8 @@ $("undo").onclick=undo;$("clear").onclick=clearAll;
 $("tol").value=String(S.settings.tol);$("chartWindow").value=String(S.settings.chartWindow);
 $("tol").onchange=()=>{S.settings.tol=Number($("tol").value);cache.clear();rebuildPredictions();save();render()};
 $("chartWindow").onchange=()=>{S.settings.chartWindow=Number($("chartWindow").value);save();draw(S.spins.map(x=>Number(x.result)))};
-$("txt").onclick=()=>{const h=S.spins.map(x=>Number(x.result)),l=["ROULETTE PATTERN LAB v13.0","SPIN | RESULT | JUMP | DIRECTION | DATE"];S.spins.forEach((s,i)=>{const p=i?h[i-1]:null;l.push((i+1)+" | "+s.result+" | "+(p==null?"":jmp(p,s.result))+" | "+(p==null?"":dir(p,s.result))+" | "+s.createdAt)});download("roulette-history-v13.2.txt",l.join("\n"),"text/plain")};
-$("json").onclick=()=>download("roulette-pattern-lab-v13.2.json",JSON.stringify(S,null,2),"application/json");
+$("txt").onclick=()=>{const h=S.spins.map(x=>Number(x.result)),l=["ROULETTE PATTERN LAB v13.3","SPIN | RESULT | JUMP | DIRECTION | DATE"];S.spins.forEach((s,i)=>{const p=i?h[i-1]:null;l.push((i+1)+" | "+s.result+" | "+(p==null?"":jmp(p,s.result))+" | "+(p==null?"":dir(p,s.result))+" | "+s.createdAt)});download("roulette-history-v13.3.txt",l.join("\n"),"text/plain")};
+$("json").onclick=()=>download("roulette-pattern-lab-v13.3.json",JSON.stringify(S,null,2),"application/json");
 $("restoreBtn").onclick=()=>$("restore").click();$("restore").onchange=e=>{const f=e.target.files[0];if(!f)return;f.text().then(t=>{const x=JSON.parse(t);if(!Array.isArray(x.spins))throw Error('Backup inválido');S=normalize(x);cache.clear();rebuildPredictions();save();$("tol").value=String(S.settings.tol);$("chartWindow").value=String(S.settings.chartWindow);render()}).catch(e=>alert(e.message))};
 function download(name,data,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 load();
