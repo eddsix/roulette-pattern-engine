@@ -115,26 +115,51 @@ let r=score.map((v,n)=>({n,v})).sort((a,b)=>b.v-a.v),sum=r.reduce((x,y)=>x+y.v,0
 }
 const BT_CACHE=new Map();
 function backtest(h){
- let key=h.length+"|"+Number($("tol").value),cached=BT_CACHE.get(key);
+ let L=h.length,cached=BT_CACHE.get(L);
  if(cached)return cached;
- let o={n:0,hit:Array(10).fill(0),dir:0};
- for(let i=12;i<h.length;i++){
-  let p=model(h.slice(0,i));if(!p)continue;
+ if(L<=12){let z={n:0,hit:Array(10).fill(0),dir:0};BT_CACHE.set(L,z);return z;}
+ let prev=BT_CACHE.get(L-1);
+ if(!prev)prev=backtest(h.slice(0,L-1));
+ let o={n:prev.n,hit:prev.hit.slice(),dir:prev.dir};
+ let p=model(h.slice(0,L-1));
+ if(p){
   o.n++;
-  for(let r=0;r<=9;r++)if(dist(p.target,h[i])<=r)o.hit[r]++;
-  if(dir(h[i-1],h[i])===p.predDir)o.dir++;
+  for(let r=0;r<=9;r++)if(dist(p.target,h[L-1])<=r)o.hit[r]++;
+  if(dir(h[L-2],h[L-1])===p.predDir)o.dir++;
  }
- BT_CACHE.set(key,o);return o;
+ BT_CACHE.set(L,o);return o;
+}
+
+function updateMemory(h){if(h.length<12)return;[...candidates(h,"sequence"),...candidates(h,"joint"),...candidates(h,"jump")].forEach(q=>{let k=q.type+"|"+q.key,m=S.memory[k]||{occ:0,next:{}};m.occ=Math.max(m.occ,q.occ);q.next.forEach(n=>m.next[n]=(m.next[n]||0)+1);S.memory[k]=m})}
+function add(n){let h=S.spins.map(x=>Number(x.result)),p=model(h),now=new Date().toISOString();S.predictions.push({id:ids(S.predictions),spinIndex:h.length+1,previous:h.at(-1)??null,prediction:p,actual:Number(n),createdAt:now});S.spins.push({id:ids(S.spins),result:Number(n),createdAt:now});updateMemory(h);save();render()}
+function render(){
+ let h=S.spins.map(x=>Number(x.result)),t=trans(h),p=model(h),bt=backtest(h),tol=Number($("tol").value);
+ $("counter").textContent=h.length+" spins";$("spins").textContent=h.length;$("trans").textContent=t.length;$("preds").textContent=S.predictions.filter(x=>x.prediction).length;$("evals").textContent=bt.n;
+ $("history").innerHTML=h.slice(-80).reverse().map(n=>"<span class='result "+col(n)+"'>"+n+"</span>").join("");
+ $("jumps").innerHTML=t.slice(-80).reverse().map(x=>"<span class='chip'>"+(x.j>=0?"+":"")+x.j+"</span>").join("");
+ $("dirs").innerHTML=t.slice(-80).reverse().map(x=>"<span class='chip'>"+x.d+"</span>").join("");
+ let cw=t.filter(x=>x.d==="CW").length,cc=t.filter(x=>x.d==="CCW").length;$("cw").textContent=pct(cw,t.length);$("ccw").textContent=pct(cc,t.length);
+ $("tolLabel").textContent=tol;$("tolA").textContent=tol;$("winrate").textContent=pct(bt.hit[tol],bt.n);$("base").textContent=bt.n?(100*(2*tol+1)/37).toFixed(1)+"%":"—";
+ if(p){
+  let tg=$("target");tg.textContent=p.target;tg.className="target "+col(p.target);$("prob").textContent=(p.prob*100).toFixed(2)+"%";$("signal").textContent=p.prob>=.06?"SEÑAL":p.prob>=.035?"SEÑAL DÉBIL":"BAJA SEÑAL";$("signal").className="signal "+(p.prob>=.06?"high":p.prob>=.035?"low":"");
+  let j=jmp(h.at(-1),p.target);$("predDir").textContent="Dirección: "+p.predDir+" · CW "+(p.cw*100).toFixed(1)+"% / CCW "+(p.ccw*100).toFixed(1)+"%";$("predJump").textContent="Salto previsto: "+(j>=0?"+":"")+j+" pockets";$("zone").textContent=neigh(p.target,tol).join(" · ");
+  $("ranking").innerHTML=p.ranking.map((x,i)=>"<div class='rank'><div class='ranktop'><span>#"+(i+1)+" · "+x.n+"</span><b>"+(x.p*100).toFixed(2)+"%</b></div><div class='bar'><i style='width:"+Math.max(2,100*x.p/p.ranking[0].p)+"%'></i></div></div>").join("");
+  $("alerts").innerHTML=[...p.seq,...p.joint,...p.jumps].slice(0,7).map(q=>"<div class='alert'><b>"+(q.type==="sequence"?"SECUENCIA":q.type==="joint"?"SALTO + DIRECCIÓN":"PATRÓN DE SALTOS")+" ACTIVADO</b><br>"+q.key.replaceAll(","," → ")+" · "+q.occ+" coincidencias · siguientes: "+q.next.join(", ")+"</div>").join("")||"<span class='muted'>No hay patrón repetido suficiente.</span>";
+  $("weights").innerHTML=Object.entries(p.adaptive.w).map(([k,v])=>"<div class='weight'><span class='muted'>"+k+"</span><br><b>"+v.toFixed(2)+"×</b><div class='muted'>"+p.adaptive.p[k].n+" tests</div></div>").join("");$("weightSummary").textContent="Los pesos se recalculan mediante backtesting walk-forward. No se fuerza un peso fijo.";
+ }else{$("target").textContent="—";$("target").className="target black";$("prob").textContent="—";$("signal").textContent=h.length<12?"ESPERANDO DATOS":"SIN SEÑAL";$("predDir").textContent="Dirección: —";$("predJump").textContent="Salto previsto: —";$("zone").textContent=h.length<12?"Se necesitan al menos 12 spins":"—";$("ranking").innerHTML="";$("alerts").innerHTML=h.length<12?"Se necesitan al menos 12 spins.":"—";$("weights").innerHTML="";$("weightSummary").textContent=""}
+ $("predHistory").innerHTML=S.predictions.filter(x=>x.prediction).slice(-60).reverse().map(x=>{let w=x.actual!=null&&dist(x.prediction.target,x.actual)<=tol;return"<div class='prow'><b>#"+x.spinIndex+"</b><span>"+x.prediction.target+" → "+x.actual+"</span><span>"+x.prediction.predDir+"</span><b class='"+(w?"win":"loss")+"'>"+(w?"WIN":"LOSS")+"</b></div>"}).join("")||"—";
+ $("library").innerHTML=Object.entries(S.memory||{}).sort((a,b)=>(b[1].occ||0)-(a[1].occ||0)).slice(0,40).map(([k,v])=>"<div class='prow' style='grid-template-columns:1fr'><span><b>"+k+"</b> · "+v.occ+" coincidencias · "+Object.entries(v.next||{}).sort((a,b)=>b[1]-a[1]).map(x=>x[0]+"("+x[1]+")").join(", ")+"</span></div>").join("")||"—";
+ draw(h)
 }
 function draw(h){let c=$("chart"),d=devicePixelRatio||1,w=c.clientWidth||500,hh=c.clientHeight||220;c.width=w*d;c.height=hh*d;let x=c.getContext("2d");x.scale(d,d);x.clearRect(0,0,w,hh);let vals=[],tol=Number($("tol").value);for(let i=12;i<h.length;i++){let b=backtest(h.slice(0,i));vals.push(b.n?100*b.hit[tol]/b.n:0)}if(!vals.length){x.fillStyle=getComputedStyle(document.body).getPropertyValue("--muted");x.font="12px system-ui";x.fillText("Aún no hay suficientes predicciones evaluadas.",12,25);return}x.strokeStyle=getComputedStyle(document.body).getPropertyValue("--accent");x.lineWidth=2;x.beginPath();vals.slice(-Number($("chartWindow").value)).forEach((y,i,a)=>{let xx=8+i*(w-16)/Math.max(1,a.length-1),yy=hh-12-y*(hh-24)/100;i?x.lineTo(xx,yy):x.moveTo(xx,yy)});x.stroke()}
 $("theme").onclick=()=>{document.body.classList.toggle("night");let n=document.body.classList.contains("night");localStorage.setItem("roulettePatternLab.theme",n?"night":"day");$("theme").textContent=n?"Modo día":"Modo noche"};
-$("undo").onclick=()=>{if(S.spins.length){S.spins.pop();S.predictions.pop();save();BT_CACHE.clear();render()}};
-$("clear").onclick=()=>{if(confirm("¿Borrar todo el histórico?")){S={version:"12.0",spins:[],predictions:[],memory:{}};save();BT_CACHE.clear();render()}};
-$("tol").onchange=()=>{BT_CACHE.clear();render()};$("chartWindow").onchange=()=>draw(S.spins.map(x=>Number(x.result)));
+$("undo").onclick=()=>{if(S.spins.length){S.spins.pop();S.predictions.pop();BT_CACHE.clear();save();render()}};
+$("clear").onclick=()=>{if(confirm("¿Borrar todo el histórico?")){S={version:"12.0",spins:[],predictions:[],memory:{}};BT_CACHE.clear();save();render()}};
+$("tol").onchange=render;$("chartWindow").onchange=()=>draw(S.spins.map(x=>Number(x.result)));
 $("txt").onclick=()=>{let l=["ROULETTE PATTERN LAB v12.1","SPIN | RESULT | JUMP | DIRECTION | DATE"];S.spins.forEach((s,i)=>{let p=i?S.spins[i-1].result:null;l.push((i+1)+" | "+s.result+" | "+(p==null?"":jmp(p,s.result))+" | "+(p==null?"":dir(p,s.result))+" | "+s.createdAt)});download("roulette-history-v12.txt",l.join("
 "),"text/plain")};
 $("json").onclick=()=>download("roulette-pattern-lab-v12.json",JSON.stringify(S,null,2),"application/json");
-$("restoreBtn").onclick=()=>$("restore").click();$("restore").onchange=e=>{let f=e.target.files[0];if(!f)return;f.text().then(t=>{let x=JSON.parse(t);if(!Array.isArray(x.spins))throw Error("Backup inválido");S={version:"12.0",spins:x.spins,predictions:Array.isArray(x.predictions)?x.predictions:[],memory:x.memory||{}};save();BT_CACHE.clear();render()}).catch(e=>alert(e.message))};
+$("restoreBtn").onclick=()=>$("restore").click();$("restore").onchange=e=>{let f=e.target.files[0];if(!f)return;f.text().then(t=>{let x=JSON.parse(t);if(!Array.isArray(x.spins))throw Error("Backup inválido");S={version:"12.0",spins:x.spins,predictions:Array.isArray(x.predictions)?x.predictions:[],memory:x.memory||{}};BT_CACHE.clear();save();render()}).catch(e=>alert(e.message))};
 function download(name,data,type){let a=document.createElement("a");a.href=URL.createObjectURL(new Blob([data],{type}));a.download=name;a.click()}
 load();
 if(localStorage.getItem("roulettePatternLab.theme")==="night"){$("theme").click()}
