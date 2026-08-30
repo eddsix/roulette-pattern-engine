@@ -113,23 +113,7 @@ let r=score.map((v,n)=>({n,v})).sort((a,b)=>b.v-a.v),sum=r.reduce((x,y)=>x+y.v,0
  let cw=0,ccw=0;for(let x of r){let j=jmp(h.at(-1),x.n);if(j>0)cw+=x.p;if(j<0)ccw+=x.p}
  return{target:r[0].n,prob:r[0].p,ranking:r.slice(0,12),predDir:cw>=ccw?"CW":"CCW",cw,ccw,adaptive:a,signals,seq:candidates(h,"sequence").slice(0,4),joint:candidates(h,"joint").slice(0,3),jumps:candidates(h,"jump").slice(0,3)}
 }
-const BT_CACHE=new Map();
-function backtest(h){
- let L=h.length,cached=BT_CACHE.get(L);
- if(cached)return cached;
- if(L<=12){let z={n:0,hit:Array(10).fill(0),dir:0};BT_CACHE.set(L,z);return z;}
- let prev=BT_CACHE.get(L-1);
- if(!prev)prev=backtest(h.slice(0,L-1));
- let o={n:prev.n,hit:prev.hit.slice(),dir:prev.dir};
- let p=model(h.slice(0,L-1));
- if(p){
-  o.n++;
-  for(let r=0;r<=9;r++)if(dist(p.target,h[L-1])<=r)o.hit[r]++;
-  if(dir(h[L-2],h[L-1])===p.predDir)o.dir++;
- }
- BT_CACHE.set(L,o);return o;
-}
-
+function backtest(h){let o={n:0,hit:Array(10).fill(0),dir:0};for(let i=12;i<h.length;i++){let p=model(h.slice(0,i));if(!p)continue;o.n++;for(let r=0;r<=9;r++)if(dist(p.target,h[i])<=r)o.hit[r]++;if(dir(h[i-1],h[i])===p.predDir)o.dir++}return o}
 function updateMemory(h){if(h.length<12)return;[...candidates(h,"sequence"),...candidates(h,"joint"),...candidates(h,"jump")].forEach(q=>{let k=q.type+"|"+q.key,m=S.memory[k]||{occ:0,next:{}};m.occ=Math.max(m.occ,q.occ);q.next.forEach(n=>m.next[n]=(m.next[n]||0)+1);S.memory[k]=m})}
 function add(n){let h=S.spins.map(x=>Number(x.result)),p=model(h),now=new Date().toISOString();S.predictions.push({id:ids(S.predictions),spinIndex:h.length+1,previous:h.at(-1)??null,prediction:p,actual:Number(n),createdAt:now});S.spins.push({id:ids(S.spins),result:Number(n),createdAt:now});updateMemory(h);save();render()}
 function render(){
@@ -153,13 +137,12 @@ function render(){
 }
 function draw(h){let c=$("chart"),d=devicePixelRatio||1,w=c.clientWidth||500,hh=c.clientHeight||220;c.width=w*d;c.height=hh*d;let x=c.getContext("2d");x.scale(d,d);x.clearRect(0,0,w,hh);let vals=[],tol=Number($("tol").value);for(let i=12;i<h.length;i++){let b=backtest(h.slice(0,i));vals.push(b.n?100*b.hit[tol]/b.n:0)}if(!vals.length){x.fillStyle=getComputedStyle(document.body).getPropertyValue("--muted");x.font="12px system-ui";x.fillText("Aún no hay suficientes predicciones evaluadas.",12,25);return}x.strokeStyle=getComputedStyle(document.body).getPropertyValue("--accent");x.lineWidth=2;x.beginPath();vals.slice(-Number($("chartWindow").value)).forEach((y,i,a)=>{let xx=8+i*(w-16)/Math.max(1,a.length-1),yy=hh-12-y*(hh-24)/100;i?x.lineTo(xx,yy):x.moveTo(xx,yy)});x.stroke()}
 $("theme").onclick=()=>{document.body.classList.toggle("night");let n=document.body.classList.contains("night");localStorage.setItem("roulettePatternLab.theme",n?"night":"day");$("theme").textContent=n?"Modo día":"Modo noche"};
-$("undo").onclick=()=>{if(S.spins.length){S.spins.pop();S.predictions.pop();BT_CACHE.clear();save();render()}};
-$("clear").onclick=()=>{if(confirm("¿Borrar todo el histórico?")){S={version:"12.0",spins:[],predictions:[],memory:{}};BT_CACHE.clear();save();render()}};
+$("undo").onclick=()=>{if(S.spins.length){S.spins.pop();S.predictions.pop();save();render()}};
+$("clear").onclick=()=>{if(confirm("¿Borrar todo el histórico?")){S={version:"12.0",spins:[],predictions:[],memory:{}};save();render()}};
 $("tol").onchange=render;$("chartWindow").onchange=()=>draw(S.spins.map(x=>Number(x.result)));
-$("txt").onclick=()=>{let l=["ROULETTE PATTERN LAB v12.1","SPIN | RESULT | JUMP | DIRECTION | DATE"];S.spins.forEach((s,i)=>{let p=i?S.spins[i-1].result:null;l.push((i+1)+" | "+s.result+" | "+(p==null?"":jmp(p,s.result))+" | "+(p==null?"":dir(p,s.result))+" | "+s.createdAt)});download("roulette-history-v12.txt",l.join("
-"),"text/plain")};
+$("txt").onclick=()=>{let l=["ROULETTE PATTERN LAB v12.1","SPIN | RESULT | JUMP | DIRECTION | DATE"];S.spins.forEach((s,i)=>{let p=i?S.spins[i-1].result:null;l.push((i+1)+" | "+s.result+" | "+(p==null?"":jmp(p,s.result))+" | "+(p==null?"":dir(p,s.result))+" | "+s.createdAt)});download("roulette-history-v12.txt",l.join("\n"),"text/plain")};
 $("json").onclick=()=>download("roulette-pattern-lab-v12.json",JSON.stringify(S,null,2),"application/json");
-$("restoreBtn").onclick=()=>$("restore").click();$("restore").onchange=e=>{let f=e.target.files[0];if(!f)return;f.text().then(t=>{let x=JSON.parse(t);if(!Array.isArray(x.spins))throw Error("Backup inválido");S={version:"12.0",spins:x.spins,predictions:Array.isArray(x.predictions)?x.predictions:[],memory:x.memory||{}};BT_CACHE.clear();save();render()}).catch(e=>alert(e.message))};
+$("restoreBtn").onclick=()=>$("restore").click();$("restore").onchange=e=>{let f=e.target.files[0];if(!f)return;f.text().then(t=>{let x=JSON.parse(t);if(!Array.isArray(x.spins))throw Error("Backup inválido");S={version:"12.0",spins:x.spins,predictions:Array.isArray(x.predictions)?x.predictions:[],memory:x.memory||{}};save();render()}).catch(e=>alert(e.message))};
 function download(name,data,type){let a=document.createElement("a");a.href=URL.createObjectURL(new Blob([data],{type}));a.download=name;a.click()}
 load();
 if(localStorage.getItem("roulettePatternLab.theme")==="night"){$("theme").click()}
