@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Roulette Pattern Lab v13.3</title>
+<title>Roulette Pattern Lab v13.4</title>
 <style>
 :root{--bg:#f5f7fa;--card:#fff;--text:#17202a;--muted:#687385;--line:#dfe4ea;--accent:#315efb;--soft:#eef2f7;--green:#16834b;--red:#c83232;--amber:#8a6400}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif}body.night{--bg:#0e1218;--card:#171c24;--text:#edf2f7;--muted:#9aa7b5;--line:#2a333f;--soft:#202833}
@@ -15,7 +15,7 @@
 <body>
 <div class="app">
 <header class="top">
-  <div class="brand"><h1>Roulette Pattern Lab <span class="muted">v13.3</span></h1><p>Adaptive Pattern Engine · walk-forward limpio · señales calibradas</p></div>
+  <div class="brand"><h1>Roulette Pattern Lab <span class="muted">v13.4</span></h1><p>Adaptive Pattern Engine · walk-forward limpio · señales calibradas</p></div>
   <div class="actions">
     <button class="btn" id="theme">Modo noche</button>
     <button class="btn" id="undo">Deshacer</button>
@@ -64,13 +64,13 @@
 
 <section class="card wide"><div class="head"><h2>Rendimiento ± tolerancia</h2><div class="controls"><span class="muted">Ventana</span><select id="chartWindow"><option value="30">30</option><option value="60" selected>60</option><option value="120">120</option></select></div></div><div class="chartwrap"><canvas id="chart"></canvas></div></section>
 </div>
-<div class="foot">v13.3 · Aprendizaje walk-forward con recencia, meta-consenso y control conservador del sobreajuste. No implica una ventaja garantizada sobre una ruleta justa.</div>
+<div class="foot">v13.4 · Aprendizaje walk-forward con recencia, meta-consenso y control conservador del sobreajuste. No implica una ventaja garantizada sobre una ruleta justa.</div>
 </div>
 
 <script>
 (function(){
 "use strict";
-const KEY="roulettePatternLab.v13.3";
+const KEY="roulettePatternLab.v13.4";
 const W=[0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
 const RED=new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
 const FAMILIES=["sequence","joint","jump","pair","transition"];
@@ -279,6 +279,11 @@ function render(){
     const sm=p.signal==="HIGH"?"SEÑAL FUERTE":p.signal==="LOW"?"SEÑAL DÉBIL":"SIN EDGE";$('signal').textContent=sm;$('signal').className="signal "+(p.signal==='HIGH'?'high':p.signal==='LOW'?'low':'none');
     const j=p.target==null?null:jmp(h.at(-1),p.target);$("predDir").textContent=p.target==null?"Dirección: —":`Dirección: ${p.predDir} · CW ${(p.cw*100).toFixed(1)}% / CCW ${(p.ccw*100).toFixed(1)}%`;$('predJump').textContent=p.target==null?"Salto previsto: —":`Salto previsto: ${j>=0?'+':''}${j} pockets`;$('zone').textContent=p.target==null?"No hay zona con evidencia suficiente":neigh(p.target,tol).join(" · ");
     $('confidence').textContent=p.confidence+"/100";$('edge').textContent=(p.edge*100>=0?'+':'')+(p.edge*100).toFixed(1)+" pp";$('support').textContent=p.activeModels+"/"+FAMILIES.length;
+    $('robustEdge').textContent=(p.robustEdge*100>=0?'+':'')+(p.robustEdge*100).toFixed(1)+" pp";
+    $('consensus').textContent=p.consensusCount+"/"+p.activeModels+" modelos ("+Math.round((p.activeModels?p.consensusCount/p.activeModels:0)*100)+"%)";
+    $('stability').textContent=Math.round(p.stability*100)+"/100";
+    const diagParts=FAMILIES.map(f=>{const q=p.adaptive.perf[f];return f+": "+(q.n?q.n+" tests · "+(q.edge*100>=0?'+':'')+(q.edge*100).toFixed(1)+" pp · reciente "+(q.recentEdge*100>=0?'+':'')+(q.recentEdge*100).toFixed(1)+" pp":"sin muestra")}).join(" | ");
+    $('learningSummary').textContent="Robusto "+(p.robustEdge*100>=0?'+':'')+(p.robustEdge*100).toFixed(1)+" pp · consenso "+p.consensusCount+"/"+p.activeModels+" · estabilidad "+Math.round(p.stability*100)+"/100. "+diagParts;
     $('ranking').innerHTML=p.ranking.map((x,i)=>`<div class="rank"><div class="ranktop"><span>#${i+1} · ${x.n} ${x.support?`· ${x.support} modelos`:''}</span><b>${(x.p*100).toFixed(2)}%</b></div><div class="bar"><i style="width:${Math.max(2,100*x.p/p.ranking[0].p)}%"></i></div></div>`).join('');
     $('alerts').innerHTML=[...p.seq,...p.joint,...p.jumps].slice(0,7).map(q=>`<div class="alert"><b>${q.type==='sequence'?'SECUENCIA':q.type==='joint'?'SALTO + DIRECCIÓN':'PATRÓN DE SALTOS'}</b><br>${esc(q.key).replaceAll(',',' → ')} · ${q.occ} coincidencias · siguientes: ${q.next.join(', ')}</div>`).join('')||'<span class="muted">No hay patrón repetido suficiente.</span>';
     $('weights').innerHTML=FAMILIES.map(k=>{const v=p.adaptive.weights[k],q=p.adaptive.perf[k];return `<div class="weight"><span class="muted">${k}</span><br><b>${v.toFixed(2)}×</b><div class="muted">${q.n} tests · ±${tol}: ${pct(q.hit,q.n)} · edge ${q.n?(q.edge*100).toFixed(1):'—'} pp · reciente ${q.n?(q.recentEdge*100).toFixed(1):'—'} pp · robusto ${q.n?(q.robustEdge*100).toFixed(1):'—'} pp</div></div>`}).join('');
@@ -307,8 +312,8 @@ $("undo").onclick=undo;$("clear").onclick=clearAll;
 $("tol").value=String(S.settings.tol);$("chartWindow").value=String(S.settings.chartWindow);
 $("tol").onchange=()=>{S.settings.tol=Number($("tol").value);cache.clear();rebuildPredictions();save();render()};
 $("chartWindow").onchange=()=>{S.settings.chartWindow=Number($("chartWindow").value);save();draw(S.spins.map(x=>Number(x.result)))};
-$("txt").onclick=()=>{const h=S.spins.map(x=>Number(x.result)),l=["ROULETTE PATTERN LAB v13.3","SPIN | RESULT | JUMP | DIRECTION | DATE"];S.spins.forEach((s,i)=>{const p=i?h[i-1]:null;l.push((i+1)+" | "+s.result+" | "+(p==null?"":jmp(p,s.result))+" | "+(p==null?"":dir(p,s.result))+" | "+s.createdAt)});download("roulette-history-v13.3.txt",l.join("\n"),"text/plain")};
-$("json").onclick=()=>download("roulette-pattern-lab-v13.3.json",JSON.stringify(S,null,2),"application/json");
+$("txt").onclick=()=>{const h=S.spins.map(x=>Number(x.result)),l=["ROULETTE PATTERN LAB v13.4","SPIN | RESULT | JUMP | DIRECTION | DATE"];S.spins.forEach((s,i)=>{const p=i?h[i-1]:null;l.push((i+1)+" | "+s.result+" | "+(p==null?"":jmp(p,s.result))+" | "+(p==null?"":dir(p,s.result))+" | "+s.createdAt)});download("roulette-history-v13.4.txt",l.join("\n"),"text/plain")};
+$("json").onclick=()=>download("roulette-pattern-lab-v13.4.json",JSON.stringify(S,null,2),"application/json");
 $("restoreBtn").onclick=()=>$("restore").click();$("restore").onchange=e=>{const f=e.target.files[0];if(!f)return;f.text().then(t=>{const x=JSON.parse(t);if(!Array.isArray(x.spins))throw Error('Backup inválido');S=normalize(x);cache.clear();rebuildPredictions();save();$("tol").value=String(S.settings.tol);$("chartWindow").value=String(S.settings.chartWindow);render()}).catch(e=>alert(e.message))};
 function download(name,data,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 load();
