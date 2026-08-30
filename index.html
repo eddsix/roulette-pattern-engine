@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Roulette Pattern Lab v13.1</title>
+<title>Roulette Pattern Lab v13.2</title>
 <style>
 :root{--bg:#f5f7fa;--card:#fff;--text:#17202a;--muted:#687385;--line:#dfe4ea;--accent:#315efb;--soft:#eef2f7;--green:#16834b;--red:#c83232}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif}body.night{--bg:#0e1218;--card:#171c24;--text:#edf2f7;--muted:#9aa7b5;--line:#2a333f;--soft:#202833}
@@ -13,7 +13,7 @@
 <body>
 <div class="app">
 <header class="top">
-<div class="brand"><h1>Roulette Pattern Lab <span class="muted">v13.1</span></h1><p>Adaptive Pattern Engine · historial local · análisis walk-forward</p></div>
+<div class="brand"><h1>Roulette Pattern Lab <span class="muted">v13.2</span></h1><p>Adaptive Pattern Engine · historial local · análisis walk-forward</p></div>
 <div class="actions"><button class="btn" id="theme">Modo noche</button><button class="btn" id="undo">Deshacer</button><button class="btn" id="clear">Borrar historial</button><button class="btn" id="txt">Exportar TXT</button><button class="btn" id="json">Backup</button><button class="btn" id="restoreBtn">Restaurar</button><input id="restore" type="file" accept=".json" hidden></div>
 </header>
 
@@ -22,7 +22,7 @@
 
 <section class="card"><div class="head"><h2>Predicción en tiempo real</h2><span class="signal" id="signal">SIN DATOS</span></div>
 <div class="prediction"><div id="target" class="target black">—</div><div><div class="big" id="prob">—</div><div class="muted">probabilidad relativa del pocket líder</div><p id="predDir">Dirección: —</p><p id="predJump">Salto previsto: —</p><p><b>Zona ±<span id="tolLabel">3</span>:</b> <span id="zone">—</span></p></div></div>
-<div class="head" style="margin-top:12px"><h2>Predicciones alternativas</h2></div><div id="ranking"></div></section>
+<div class="head" style="margin-top:12px"><h2>Predicciones alternativas</h2></div><div id="ranking"></div><div id="signalDetails" class="details"></div></section>
 
 <section class="card"><div class="head"><h2>Estado del histórico</h2><span class="muted" id="storage">LOCAL</span></div>
 <div class="stats"><div class="stat"><span>Spins</span><b id="spins">0</b></div><div class="stat"><span>Transiciones</span><b id="trans">0</b></div><div class="stat"><span>Predicciones</span><b id="preds">0</b></div><div class="stat"><span>Evaluadas</span><b id="evals">0</b></div></div>
@@ -44,7 +44,7 @@
 
 <section class="card wide"><div class="head"><h2>Rendimiento ± tolerancia</h2><div class="controls"><span class="muted">Ventana</span><select id="chartWindow"><option value="30">30</option><option value="60" selected>60</option><option value="120">120</option></select></div></div><div class="chartwrap"><canvas id="chart"></canvas></div></section>
 </div>
-<section class="card wide"><div class="head"><h2>Rendimiento de modelos</h2><span class="muted">aprendizaje incremental</span></div><div id="modelTable" class="rows"></div><p id="learningNote" class="muted"></p></section><div class="foot">v13.1 · Los porcentajes son estimaciones estadísticas del modelo, no garantías de resultados.</div>
+<div class="foot">v13.2 · Los porcentajes son estimaciones estadísticas del modelo, no garantías de resultados.</div>
 </div>
 
 <script>
@@ -96,9 +96,7 @@ function perf(h,f){
  return{n:N,exact:E,hit3:H,u:(((H/N)-(7/37))*.7+((E/N)-(1/37))*.3)*Math.min(1,N/25)}
 }
 function adaptive(h){
- let p={},w={},fs=["sequence","joint","jump","pair","transition"];
- fs.forEach(f=>{p[f]=perf(h,f);w[f]=1});
- return{p,w};
+ let p={},w={},fs=["sequence","joint","jump","pair","transition"];fs.forEach(f=>p[f]=perf(h,f));fs.forEach(f=>{let u=Math.max(-.03,Math.min(.03,p[f].u));w[f]=1+((u+.03)/.06)*3});return{p,w}
 }
 function model(h){
  if(h.length<12)return null;
@@ -115,54 +113,33 @@ let r=score.map((v,n)=>({n,v})).sort((a,b)=>b.v-a.v),sum=r.reduce((x,y)=>x+y.v,0
  let cw=0,ccw=0;for(let x of r){let j=jmp(h.at(-1),x.n);if(j>0)cw+=x.p;if(j<0)ccw+=x.p}
  return{target:r[0].n,prob:r[0].p,ranking:r.slice(0,12),predDir:cw>=ccw?"CW":"CCW",cw,ccw,adaptive:a,signals,seq:candidates(h,"sequence").slice(0,4),joint:candidates(h,"joint").slice(0,3),jumps:candidates(h,"jump").slice(0,3)}
 }
-function backtest(h){
- ensureLearning();
- let o={n:0,hit:Array(10).fill(0),dir:0};
- ["sequence","joint","jump","pair","transition"].forEach(f=>{
-  let s=S.stats[f];o.n+=s.tests;for(let r=0;r<=9;r++)o.hit[r]+=s.hit[r]||0;
- });
- return o;
-}
+function backtest(h){let o={n:0,hit:Array(10).fill(0),dir:0};for(let i=12;i<h.length;i++){let p=model(h.slice(0,i));if(!p)continue;o.n++;for(let r=0;r<=9;r++)if(dist(p.target,h[i])<=r)o.hit[r]++;if(dir(h[i-1],h[i])===p.predDir)o.dir++}return o}
 function updateMemory(h){if(h.length<12)return;[...candidates(h,"sequence"),...candidates(h,"joint"),...candidates(h,"jump")].forEach(q=>{let k=q.type+"|"+q.key,m=S.memory[k]||{occ:0,next:{}};m.occ=Math.max(m.occ,q.occ);q.next.forEach(n=>m.next[n]=(m.next[n]||0)+1);S.memory[k]=m})}
-function ensureLearning(){
- if(!S.stats)S.stats={};
+
+
+/* v13.2 passive learning layer: observes the stable v12.1 model only. */
+function ensurePassiveLearning(){
+ if(!S.passiveLearning)S.passiveLearning={sequence:{tests:0,hits:0},joint:{tests:0,hits:0},jump:{tests:0,hits:0},pair:{tests:0,hits:0},transition:{tests:0,hits:0}};
+}
+function updatePassiveLearning(h,actual){
+ ensurePassiveLearning();
+ if(h.length<12)return;
  ["sequence","joint","jump","pair","transition"].forEach(f=>{
-  if(!S.stats[f])S.stats[f]={tests:0,exact:0,hit:Array(10).fill(0),sum:0,sum2:0};
+  let t=famTarget(h,f); if(t===null)return;
+  let s=S.passiveLearning[f]; s.tests++;
+  if(dist(t,actual)<=Number($("tol").value))s.hits++;
  });
-}
-function learnIncremental(h,actual){
- ensureLearning();
- ["sequence","joint","jump","pair","transition"].forEach(f=>{
-  let t=famTarget(h,f);if(t===null)return;
-  let s=S.stats[f],e=dist(t,actual);s.tests++;if(e===0)s.exact++;
-  for(let r=0;r<=9;r++)if(e<=r)s.hit[r]++;
-  s.sum+=e;s.sum2+=e*e;
- });
-}
-function learnedWeight(f){
- ensureLearning();let s=S.stats[f],n=s.tests;if(n<10)return 1;
- let tol=Number($("tol").value),rate=(s.hit[tol]||0)/n,base=(2*tol+1)/37;
- let mean=s.sum/n,v=Math.max(0,s.sum2/n-mean*mean);
- let stability=1/(1+Math.sqrt(v)/8),sample=Math.min(1,n/100);
- return Math.max(.4,Math.min(3.5,1+Math.max(-.5,Math.min(2.5,(rate-base)*8))*sample*stability));
-}
-function add(n){
- let h=S.spins.map(x=>Number(x.result)),p=model(h),now=new Date().toISOString();
- if(h.length>=12)learnIncremental(h,Number(n));
- S.predictions.push({id:ids(S.predictions),spinIndex:h.length+1,previous:h.at(-1)??null,prediction:p,actual:Number(n),createdAt:now});
- S.spins.push({id:ids(S.spins),result:Number(n),createdAt:now});
- updateMemory(h);save();render();
-}
-function render(){ensureLearning();
-if($("modelTable")){
- let tol=Number($("tol").value);
- $("modelTable").innerHTML=["sequence","joint","jump","pair","transition"].map(f=>{
-  let s=S.stats[f],w=learnedWeight(f);
-  return "<div style='display:grid;grid-template-columns:1.2fr 60px 95px 80px 70px;gap:7px;padding:7px 0;border-bottom:1px solid var(--line);font-size:11px'><b>"+f+"</b><span>"+s.tests+" tests</span><span>±"+tol+": "+pct(s.hit[tol]||0,s.tests)+"</span><span>error: "+(s.tests?(s.sum/s.tests).toFixed(2):"—")+"</span><b>"+w.toFixed(2)+"×</b></div>";
- }).join("");
- $("learningNote").textContent="Motor predictivo base conservado. Los pesos se aprenden por separado y no alteran el ranking en tiempo real.";
 }
 
+function add(n){let h=S.spins.map(x=>Number(x.result)),p=model(h),now=new Date().toISOString();updatePassiveLearning(h,Number(n));S.predictions.push({id:ids(S.predictions),spinIndex:h.length+1,previous:h.at(-1)??null,prediction:p,actual:Number(n),createdAt:now});S.spins.push({id:ids(S.spins),result:Number(n),createdAt:now});updateMemory(h);save();render()}
+function render(){
+if($("signalDetails")){
+ let h=S.spins.map(x=>Number(x.result)),p=model(h);
+ if(p){
+  let sig=(p.signals||[]).slice(0,5).map(s=>s.f.toUpperCase()+": "+s.occ+" coincidencias").join(" · ");
+  $("signalDetails").textContent=sig||"Predicción basada en el histórico disponible.";
+ }else $("signalDetails").textContent="Esperando suficiente histórico para generar señales.";
+}
  let h=S.spins.map(x=>Number(x.result)),t=trans(h),p=model(h),bt=backtest(h),tol=Number($("tol").value);
  $("counter").textContent=h.length+" spins";$("spins").textContent=h.length;$("trans").textContent=t.length;$("preds").textContent=S.predictions.filter(x=>x.prediction).length;$("evals").textContent=bt.n;
  $("history").innerHTML=h.slice(-80).reverse().map(n=>"<span class='result "+col(n)+"'>"+n+"</span>").join("");
@@ -178,6 +155,7 @@ if($("modelTable")){
   $("weights").innerHTML=Object.entries(p.adaptive.w).map(([k,v])=>"<div class='weight'><span class='muted'>"+k+"</span><br><b>"+v.toFixed(2)+"×</b><div class='muted'>"+p.adaptive.p[k].n+" tests</div></div>").join("");$("weightSummary").textContent="Los pesos se recalculan mediante backtesting walk-forward. No se fuerza un peso fijo.";
  }else{$("target").textContent="—";$("target").className="target black";$("prob").textContent="—";$("signal").textContent=h.length<12?"ESPERANDO DATOS":"SIN SEÑAL";$("predDir").textContent="Dirección: —";$("predJump").textContent="Salto previsto: —";$("zone").textContent=h.length<12?"Se necesitan al menos 12 spins":"—";$("ranking").innerHTML="";$("alerts").innerHTML=h.length<12?"Se necesitan al menos 12 spins.":"—";$("weights").innerHTML="";$("weightSummary").textContent=""}
  $("predHistory").innerHTML=S.predictions.filter(x=>x.prediction).slice(-60).reverse().map(x=>{let w=x.actual!=null&&dist(x.prediction.target,x.actual)<=tol;return"<div class='prow'><b>#"+x.spinIndex+"</b><span>"+x.prediction.target+" → "+x.actual+"</span><span>"+x.prediction.predDir+"</span><b class='"+(w?"win":"loss")+"'>"+(w?"WIN":"LOSS")+"</b></div>"}).join("")||"—";
+ $("library").innerHTML=Object.entries(S.memory||{}).sort((a,b)=>(b[1].occ||0)-(a[1].occ||0)).slice(0,40).map(([k,v])=>"<div class='prow' style='grid-template-columns:1fr'><span><b>"+k+"</b> · "+v.occ+" coincidencias · "+Object.entries(v.next||{}).sort((a,b)=>b[1]-a[1]).map(x=>x[0]+"("+x[1]+")").join(", ")+"</span></div>").join("")||"—";
  draw(h)
 }
 function draw(h){let c=$("chart"),d=devicePixelRatio||1,w=c.clientWidth||500,hh=c.clientHeight||220;c.width=w*d;c.height=hh*d;let x=c.getContext("2d");x.scale(d,d);x.clearRect(0,0,w,hh);let vals=[],tol=Number($("tol").value);for(let i=12;i<h.length;i++){let b=backtest(h.slice(0,i));vals.push(b.n?100*b.hit[tol]/b.n:0)}if(!vals.length){x.fillStyle=getComputedStyle(document.body).getPropertyValue("--muted");x.font="12px system-ui";x.fillText("Aún no hay suficientes predicciones evaluadas.",12,25);return}x.strokeStyle=getComputedStyle(document.body).getPropertyValue("--accent");x.lineWidth=2;x.beginPath();vals.slice(-Number($("chartWindow").value)).forEach((y,i,a)=>{let xx=8+i*(w-16)/Math.max(1,a.length-1),yy=hh-12-y*(hh-24)/100;i?x.lineTo(xx,yy):x.moveTo(xx,yy)});x.stroke()}
@@ -185,11 +163,11 @@ $("theme").onclick=()=>{document.body.classList.toggle("night");let n=document.b
 $("undo").onclick=()=>{if(S.spins.length){S.spins.pop();S.predictions.pop();save();render()}};
 $("clear").onclick=()=>{if(confirm("¿Borrar todo el histórico?")){S={version:"12.0",spins:[],predictions:[],memory:{}};save();render()}};
 $("tol").onchange=render;$("chartWindow").onchange=()=>draw(S.spins.map(x=>Number(x.result)));
-$("txt").onclick=()=>{let l=["ROULETTE PATTERN LAB v13.1","SPIN | RESULT | JUMP | DIRECTION | DATE"];S.spins.forEach((s,i)=>{let p=i?S.spins[i-1].result:null;l.push((i+1)+" | "+s.result+" | "+(p==null?"":jmp(p,s.result))+" | "+(p==null?"":dir(p,s.result))+" | "+s.createdAt)});download("roulette-history-v12.txt",l.join("\n"),"text/plain")};
+$("txt").onclick=()=>{let l=["ROULETTE PATTERN LAB v13.2","SPIN | RESULT | JUMP | DIRECTION | DATE"];S.spins.forEach((s,i)=>{let p=i?S.spins[i-1].result:null;l.push((i+1)+" | "+s.result+" | "+(p==null?"":jmp(p,s.result))+" | "+(p==null?"":dir(p,s.result))+" | "+s.createdAt)});download("roulette-history-v12.txt",l.join("\n"),"text/plain")};
 $("json").onclick=()=>download("roulette-pattern-lab-v12.json",JSON.stringify(S,null,2),"application/json");
 $("restoreBtn").onclick=()=>$("restore").click();$("restore").onchange=e=>{let f=e.target.files[0];if(!f)return;f.text().then(t=>{let x=JSON.parse(t);if(!Array.isArray(x.spins))throw Error("Backup inválido");S={version:"12.0",spins:x.spins,predictions:Array.isArray(x.predictions)?x.predictions:[],memory:x.memory||{}};save();render()}).catch(e=>alert(e.message))};
 function download(name,data,type){let a=document.createElement("a");a.href=URL.createObjectURL(new Blob([data],{type}));a.download=name;a.click()}
-load();ensureLearning();
+load();
 if(localStorage.getItem("roulettePatternLab.theme")==="night"){$("theme").click()}
 for(let n=0;n<=36;n++){let b=document.createElement("button");b.className="num "+col(n);b.textContent=n;b.onpointerdown=()=>{b.classList.add("pressed");setTimeout(()=>b.classList.remove("pressed"),120)};b.onclick=()=>add(n);$("numbers").appendChild(b)}
 render();

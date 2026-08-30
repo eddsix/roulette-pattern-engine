@@ -1,14 +1,10 @@
-# Roulette Pattern Lab v13.1
+# Roulette Pattern Lab v13.2
 
-Built from the supplied v12.1 source.
+The live prediction engine is preserved directly from the supplied v12.1 build.
+No adaptive weight is fed back into the live ranking.
 
-The live prediction engine remains the stable baseline: adaptive learning does
-not alter its live ranking in this version.
+A passive learning layer records the performance of Sequence, Joint, Jump, Pair
+and Transition without changing the established prediction.
 
-Incremental learning is independent for Sequence, Joint, Jump, Pair and
-Transition. Each family accumulates tests, exact hits, ±1..±9 hits, mean error,
-variance and an adaptive learned weight. The expensive recursive historical
-backtest is replaced by accumulated statistics.
-
-The dashboard includes a model-performance panel so the learning can be
-observed without changing the proven prediction behavior.
+The technical model-performance panel is removed. The prediction area instead
+shows a compact explanation of the signals supporting the current prediction.
