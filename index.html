@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Roulette Pattern Lab v12.1</title>
+<title>Roulette Pattern Lab v13.3</title>
 <style>
 :root{--bg:#f5f7fa;--card:#fff;--text:#17202a;--muted:#687385;--line:#dfe4ea;--accent:#315efb;--soft:#eef2f7;--green:#16834b;--red:#c83232}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif}body.night{--bg:#0e1218;--card:#171c24;--text:#edf2f7;--muted:#9aa7b5;--line:#2a333f;--soft:#202833}
@@ -13,7 +13,7 @@
 <body>
 <div class="app">
 <header class="top">
-<div class="brand"><h1>Roulette Pattern Lab <span class="muted">v12.1</span></h1><p>Adaptive Pattern Engine · historial local · análisis walk-forward</p></div>
+<div class="brand"><h1>Roulette Pattern Lab <span class="muted">v13.3</span></h1><p>Adaptive Pattern Engine · historial local · análisis walk-forward</p></div>
 <div class="actions"><button class="btn" id="theme">Modo noche</button><button class="btn" id="undo">Deshacer</button><button class="btn" id="clear">Borrar historial</button><button class="btn" id="txt">Exportar TXT</button><button class="btn" id="json">Backup</button><button class="btn" id="restoreBtn">Restaurar</button><input id="restore" type="file" accept=".json" hidden></div>
 </header>
 
@@ -44,7 +44,7 @@
 
 <section class="card wide"><div class="head"><h2>Rendimiento ± tolerancia</h2><div class="controls"><span class="muted">Ventana</span><select id="chartWindow"><option value="30">30</option><option value="60" selected>60</option><option value="120">120</option></select></div></div><div class="chartwrap"><canvas id="chart"></canvas></div></section>
 </div>
-<div class="foot">v12.1 · Los porcentajes son estimaciones estadísticas del modelo, no garantías de resultados.</div>
+<div class="foot">v13.3 · Los porcentajes son estimaciones estadísticas del modelo, no garantías de resultados.</div>
 </div>
 
 <script>
@@ -55,6 +55,12 @@ const W=[0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,
 const RED=new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
 let S={version:"12.0",spins:[],predictions:[],memory:{}};
 const $=id=>document.getElementById(id);
+let PERF_CACHE_BASE=null, PERF_CACHE=new Map(), PERF_TRANS_CACHE=new Map();
+function perfCacheReset(h){PERF_CACHE_BASE=h;PERF_CACHE=new Map();PERF_TRANS_CACHE=new Map()}
+function perfCacheEnd(){PERF_CACHE_BASE=null;PERF_CACHE.clear();PERF_TRANS_CACHE.clear()}
+function perfKey(h,f){if(!PERF_CACHE_BASE)return null;let n=h.length;if(n>PERF_CACHE_BASE.length)return null;return f+"|"+n}
+function isPerfPrefix(h){if(!PERF_CACHE_BASE||h.length>PERF_CACHE_BASE.length)return false;return h.every((v,i)=>v===PERF_CACHE_BASE[i])}
+
 const idx=n=>W.indexOf(Number(n));
 const jmp=(a,b)=>{let d=(idx(b)-idx(a)+37)%37;return d>18?d-37:d};
 const dist=(a,b)=>Math.abs(jmp(a,b));
@@ -70,9 +76,14 @@ function load(){
 }
 function save(){localStorage.setItem(KEY,JSON.stringify(S))}
 function ids(a){return a.reduce((m,x)=>Math.max(m,Number(x.id)||0),0)+1}
-function trans(h){let a=[];for(let i=1;i<h.length;i++)a.push({from:h[i-1],to:h[i],j:jmp(h[i-1],h[i]),d:dir(h[i-1],h[i])});return a}
+function trans(h){
+ if(isPerfPrefix(h)){let k=h.length;if(PERF_TRANS_CACHE.has(k))return PERF_TRANS_CACHE.get(k)}
+ let a=[];for(let i=1;i<h.length;i++)a.push({from:h[i-1],to:h[i],j:jmp(h[i-1],h[i]),d:dir(h[i-1],h[i])});
+ if(isPerfPrefix(h))PERF_TRANS_CACHE.set(h.length,a);
+ return a
+}
 
-function candidates(h,f){
+function candidatesRaw(h,f){
  if(h.length<12)return [];
  let out=[];
  if(f==="sequence"){
@@ -88,6 +99,14 @@ function candidates(h,f){
  }
  return out.sort((a,b)=>b.len-a.len||b.occ-a.occ)
 }
+function candidates(h,f){
+ let k=perfKey(h,f);
+ if(k!==null && isPerfPrefix(h) && PERF_CACHE.has(k))return PERF_CACHE.get(k);
+ let out=candidatesRaw(h,f);
+ if(k!==null && isPerfPrefix(h))PERF_CACHE.set(k,out);
+ return out;
+}
+
 function famTarget(h,f){let c=candidates(h,f);if(!c.length)return null;let q=Array(37).fill(0);c.slice(0,5).forEach(p=>p.next.forEach(n=>q[idx(n)]++));let best=0;for(let n=1;n<37;n++)if(q[n]>q[best])best=n;return q[best]?best:null}
 function perf(h,f){
  let n=Math.min(45,Math.max(0,h.length-12));if(!n)return{n:0,exact:0,hit3:0,u:0};let st=h.length-n,N=0,E=0,H=0;
@@ -113,7 +132,19 @@ let r=score.map((v,n)=>({n,v})).sort((a,b)=>b.v-a.v),sum=r.reduce((x,y)=>x+y.v,0
  let cw=0,ccw=0;for(let x of r){let j=jmp(h.at(-1),x.n);if(j>0)cw+=x.p;if(j<0)ccw+=x.p}
  return{target:r[0].n,prob:r[0].p,ranking:r.slice(0,12),predDir:cw>=ccw?"CW":"CCW",cw,ccw,adaptive:a,signals,seq:candidates(h,"sequence").slice(0,4),joint:candidates(h,"joint").slice(0,3),jumps:candidates(h,"jump").slice(0,3)}
 }
-function backtest(h){let o={n:0,hit:Array(10).fill(0),dir:0};for(let i=12;i<h.length;i++){let p=model(h.slice(0,i));if(!p)continue;o.n++;for(let r=0;r<=9;r++)if(dist(p.target,h[i])<=r)o.hit[r]++;if(dir(h[i-1],h[i])===p.predDir)o.dir++}return o}
+function backtest(h){
+ let o={n:0,hit:Array(10).fill(0),dir:0};
+ perfCacheReset(h);
+ try{
+  for(let i=12;i<h.length;i++){
+   let p=model(h.slice(0,i));if(!p)continue;o.n++;
+   for(let r=0;r<=9;r++)if(dist(p.target,h[i])<=r)o.hit[r]++;
+   if(dir(h[i-1],h[i])===p.predDir)o.dir++;
+  }
+  return o;
+ }finally{perfCacheEnd()}
+}
+
 function updateMemory(h){if(h.length<12)return;[...candidates(h,"sequence"),...candidates(h,"joint"),...candidates(h,"jump")].forEach(q=>{let k=q.type+"|"+q.key,m=S.memory[k]||{occ:0,next:{}};m.occ=Math.max(m.occ,q.occ);q.next.forEach(n=>m.next[n]=(m.next[n]||0)+1);S.memory[k]=m})}
 function add(n){let h=S.spins.map(x=>Number(x.result)),p=model(h),now=new Date().toISOString();S.predictions.push({id:ids(S.predictions),spinIndex:h.length+1,previous:h.at(-1)??null,prediction:p,actual:Number(n),createdAt:now});S.spins.push({id:ids(S.spins),result:Number(n),createdAt:now});updateMemory(h);save();render()}
 function render(){
@@ -140,7 +171,8 @@ $("theme").onclick=()=>{document.body.classList.toggle("night");let n=document.b
 $("undo").onclick=()=>{if(S.spins.length){S.spins.pop();S.predictions.pop();save();render()}};
 $("clear").onclick=()=>{if(confirm("¿Borrar todo el histórico?")){S={version:"12.0",spins:[],predictions:[],memory:{}};save();render()}};
 $("tol").onchange=render;$("chartWindow").onchange=()=>draw(S.spins.map(x=>Number(x.result)));
-$("txt").onclick=()=>{let l=["ROULETTE PATTERN LAB v12.1","SPIN | RESULT | JUMP | DIRECTION | DATE"];S.spins.forEach((s,i)=>{let p=i?S.spins[i-1].result:null;l.push((i+1)+" | "+s.result+" | "+(p==null?"":jmp(p,s.result))+" | "+(p==null?"":dir(p,s.result))+" | "+s.createdAt)});download("roulette-history-v12.txt",l.join("\n"),"text/plain")};
+$("txt").onclick=()=>{let l=["ROULETTE PATTERN LAB v13.3","SPIN | RESULT | JUMP | DIRECTION | DATE"];S.spins.forEach((s,i)=>{let p=i?S.spins[i-1].result:null;l.push((i+1)+" | "+s.result+" | "+(p==null?"":jmp(p,s.result))+" | "+(p==null?"":dir(p,s.result))+" | "+s.createdAt)});download("roulette-history-v12.txt",l.join("
+"),"text/plain")};
 $("json").onclick=()=>download("roulette-pattern-lab-v12.json",JSON.stringify(S,null,2),"application/json");
 $("restoreBtn").onclick=()=>$("restore").click();$("restore").onchange=e=>{let f=e.target.files[0];if(!f)return;f.text().then(t=>{let x=JSON.parse(t);if(!Array.isArray(x.spins))throw Error("Backup inválido");S={version:"12.0",spins:x.spins,predictions:Array.isArray(x.predictions)?x.predictions:[],memory:x.memory||{}};save();render()}).catch(e=>alert(e.message))};
 function download(name,data,type){let a=document.createElement("a");a.href=URL.createObjectURL(new Blob([data],{type}));a.download=name;a.click()}
