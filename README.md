@@ -1,7 +1,14 @@
-# Roulette Pattern Lab v12.1
+# Roulette Pattern Lab v13.1
 
-Changes from v12.0:
-- Latest item is displayed first in Últimos resultados, Saltos recientes and Direcciones recientes.
-- Prediction ranking now applies a mild anti-repeat regularizer to pockets repeatedly appearing in the last spins or repeatedly selected by the model.
-- Repetition is penalized, not forbidden: strong historical pattern evidence can still overcome the regularizer.
-- Existing persistence key and all other v12.0 features are retained.
+Built from the supplied v12.1 source.
+
+The live prediction engine remains the stable baseline: adaptive learning does
+not alter its live ranking in this version.
+
+Incremental learning is independent for Sequence, Joint, Jump, Pair and
+Transition. Each family accumulates tests, exact hits, ±1..±9 hits, mean error,
+variance and an adaptive learned weight. The expensive recursive historical
+backtest is replaced by accumulated statistics.
+
+The dashboard includes a model-performance panel so the learning can be
+observed without changing the proven prediction behavior.
