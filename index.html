@@ -13,17 +13,21 @@
 <body>
 <div class="app">
 <header class="top">
-<div class="brand"><h1>Roulette Pattern Lab <span class="muted">v13.2</span></h1><p>Stable Prediction Engine · historial local · análisis de patrones</p></div>
+<div class="brand"><h1>Roulette Pattern Lab <span class="muted">v12.1</span></h1><p>Adaptive Pattern Engine · historial local · análisis walk-forward</p></div>
 <div class="actions"><button class="btn" id="theme">Modo noche</button><button class="btn" id="undo">Deshacer</button><button class="btn" id="clear">Borrar historial</button><button class="btn" id="txt">Exportar TXT</button><button class="btn" id="json">Backup</button><button class="btn" id="restoreBtn">Restaurar</button><input id="restore" type="file" accept=".json" hidden></div>
 </header>
 
-<div class="grid"><section class="card"><div class="head"><h2>Predicción en tiempo real</h2><span class="signal" id="signal">SIN DATOS</span></div>
+<div class="grid">
+<section class="card wide"><div class="head"><h2>Entrada de resultados</h2><span class="muted" id="counter">0 spins</span></div><div class="numbers" id="numbers"></div></section>
+
+<section class="card"><div class="head"><h2>Predicción en tiempo real</h2><span class="signal" id="signal">SIN DATOS</span></div>
 <div class="prediction"><div id="target" class="target black">—</div><div><div class="big" id="prob">—</div><div class="muted">probabilidad relativa del pocket líder</div><p id="predDir">Dirección: —</p><p id="predJump">Salto previsto: —</p><p><b>Zona ±<span id="tolLabel">3</span>:</b> <span id="zone">—</span></p></div></div>
-<div class="head" style="margin-top:12px"><h2>Predicciones alternativas</h2></div><div id="ranking"></div></section><section class="card wide" id="entryCard"><div class="head"><h2>Entrada de resultados</h2><span class="muted" id="counter">0 spins</span></div><div class="numbers" id="numbers"></div></section><section class="card"><div class="head"><h2>Patrones activos</h2></div><div id="alerts"></div></section>
+<div class="head" style="margin-top:12px"><h2>Predicciones alternativas</h2></div><div id="ranking"></div></section>
 
-
-
-
+<section class="card"><div class="head"><h2>Estado del histórico</h2><span class="muted" id="storage">LOCAL</span></div>
+<div class="stats"><div class="stat"><span>Spins</span><b id="spins">0</b></div><div class="stat"><span>Transiciones</span><b id="trans">0</b></div><div class="stat"><span>Predicciones</span><b id="preds">0</b></div><div class="stat"><span>Evaluadas</span><b id="evals">0</b></div></div>
+<div class="stats" style="margin-top:8px"><div class="stat"><span>CW</span><b id="cw">—</b></div><div class="stat"><span>CCW</span><b id="ccw">—</b></div><div class="stat"><span>±<span id="tolA">3</span></span><b id="winrate">—</b></div><div class="stat"><span>Base</span><b id="base">—</b></div></div>
+</section>
 
 <section class="card wide"><div class="head"><h2>Últimos resultados</h2></div><div id="history" class="scrollbox"></div></section>
 <section class="card"><div class="head"><h2>Saltos recientes</h2></div><div id="jumps" class="scrollbox"></div></section>
@@ -31,14 +35,16 @@
 
 <section class="card"><div class="head"><h2>Configuración de tolerancia</h2><select id="tol"><option value="1">±1</option><option value="2">±2</option><option value="3" selected>±3</option><option value="4">±4</option><option value="5">±5</option><option value="6">±6</option><option value="7">±7</option><option value="8">±8</option><option value="9">±9</option></select></div><div class="details">La tolerancia define cuándo una predicción se considera ganadora en el backtest y en el historial.</div></section>
 
+<section class="card"><div class="head"><h2>Patrones activos</h2></div><div id="alerts"></div></section>
 
-
+<section class="card wide"><div class="head"><h2>Pesos adaptativos</h2><span class="muted">aprendizaje walk-forward</span></div><div id="weights" class="weights"></div><p id="weightSummary" class="muted"></p></section>
 
 <section class="card"><div class="head"><h2>Historial de predicciones</h2></div><div id="predHistory" class="rows"></div></section>
+<section class="card"><div class="head"><h2>Biblioteca de patrones</h2></div><div id="library" class="rows"></div></section>
 
-<section class="card wide"><div class="head"><h2>Rendimiento predictivo</h2><div class="controls"><span class="muted">Ventana</span><select id="chartWindow"><option value="30">30</option><option value="60" selected>60</option><option value="120">120</option></select></div></div><div class="details" style="margin-bottom:8px">Porcentaje de predicciones ganadoras según la tolerancia seleccionada · X: predicciones evaluadas · Y: porcentaje de aciertos.</div><div class="chartwrap"><canvas id="chart"></canvas></div></section>
+<section class="card wide"><div class="head"><h2>Rendimiento ± tolerancia</h2><div class="controls"><span class="muted">Ventana</span><select id="chartWindow"><option value="30">30</option><option value="60" selected>60</option><option value="120">120</option></select></div></div><div class="chartwrap"><canvas id="chart"></canvas></div></section>
 </div>
-<div class="foot">v13.2 · Los porcentajes son estimaciones estadísticas del modelo, no garantías de resultados.</div>
+<div class="foot">v12.1 · Los porcentajes son estimaciones estadísticas del modelo, no garantías de resultados.</div>
 </div>
 
 <script>
