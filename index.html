@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Roulette Pattern Lab v13.4</title>
+<title>Roulette Pattern Lab v13.5</title>
 <style>
 :root{--bg:#f5f7fa;--card:#fff;--text:#17202a;--muted:#687385;--line:#dfe4ea;--accent:#315efb;--soft:#eef2f7;--green:#16834b;--red:#c83232;--amber:#8a6400}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif}body.night{--bg:#0e1218;--card:#171c24;--text:#edf2f7;--muted:#9aa7b5;--line:#2a333f;--soft:#202833}
@@ -15,7 +15,7 @@
 <body>
 <div class="app">
 <header class="top">
-  <div class="brand"><h1>Roulette Pattern Lab <span class="muted">v13.4</span></h1><p>Adaptive Pattern Engine · walk-forward limpio · señales calibradas</p></div>
+  <div class="brand"><h1>Roulette Pattern Lab <span class="muted">v13.5</span></h1><p>Adaptive Pattern Engine · walk-forward limpio · señales calibradas</p></div>
   <div class="actions">
     <button class="btn" id="theme">Modo noche</button>
     <button class="btn" id="undo">Deshacer</button>
@@ -64,17 +64,17 @@
 
 <section class="card wide"><div class="head"><h2>Rendimiento ± tolerancia</h2><div class="controls"><span class="muted">Ventana</span><select id="chartWindow"><option value="30">30</option><option value="60" selected>60</option><option value="120">120</option></select></div></div><div class="chartwrap"><canvas id="chart"></canvas></div></section>
 </div>
-<div class="foot">v13.4 · Aprendizaje walk-forward con recencia, meta-consenso y control conservador del sobreajuste. No implica una ventaja garantizada sobre una ruleta justa.</div>
+<div class="foot">v13.5 · Aprendizaje walk-forward con recencia, meta-consenso y control conservador del sobreajuste. No implica una ventaja garantizada sobre una ruleta justa.</div>
 </div>
 
 <script>
 (function(){
 "use strict";
-const KEY="roulettePatternLab.v13.4";
+const KEY="roulettePatternLab.v13.5";
 const W=[0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
 const RED=new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
 const FAMILIES=["sequence","joint","jump","pair","transition"];
-let S={version:"13.3",spins:[],predictions:[],settings:{tol:3,chartWindow:60}};
+let S={version:"13.5",spins:[],predictions:[],settings:{tol:3,chartWindow:60}};
 const cache=new Map();
 const $=id=>document.getElementById(id);
 const idx=n=>W.indexOf(Number(n));
@@ -89,10 +89,11 @@ const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 
 function normalize(raw){
   const spins=Array.isArray(raw?.spins)?raw.spins.map((x,i)=>({id:Number(x.id)||i+1,result:Number(x.result),createdAt:x.createdAt||new Date().toISOString()})).filter(x=>x.result>=0&&x.result<=36):[];
-  return {version:"13.3",spins,predictions:Array.isArray(raw?.predictions)?raw.predictions:[],settings:{tol:Number(raw?.settings?.tol)||3,chartWindow:Number(raw?.settings?.chartWindow)||60}};
+  return {version:"13.5",spins,predictions:Array.isArray(raw?.predictions)?raw.predictions:[],settings:{tol:Number(raw?.settings?.tol)||3,chartWindow:Number(raw?.settings?.chartWindow)||60}};
 }
 function load(){
   try{let x=JSON.parse(localStorage.getItem(KEY)||"null");if(x&&Array.isArray(x.spins)){S=normalize(x);return}}catch(e){}
+  try{let x=JSON.parse(localStorage.getItem("roulettePatternLab.v13.4")||"null");if(x&&Array.isArray(x.spins)){S=normalize(x);rebuildPredictions();save();return}}catch(e){}
   try{let x=JSON.parse(localStorage.getItem("roulettePatternLab.v12")||"null");if(x&&Array.isArray(x.spins)){S=normalize(x);save();return}}catch(e){}
   try{let x=JSON.parse(localStorage.getItem("roulettePatternLab.v10")||"null");if(x&&Array.isArray(x.spins)){S=normalize(x);save()}}catch(e){}
 }
@@ -241,8 +242,12 @@ function walkForward(h,tol=3){
   cache.set(key,out);if(cache.size>25)cache.delete(cache.keys().next().value);return out;
 }
 function backtest(h,tol=3){
-  const rows=walkForward(h,tol),n=rows.length,hit=rows.filter(x=>x.hit).length,exact=rows.filter(x=>x.exact).length,dirHit=rows.filter((x,i)=>{if(i===0)return x.dir===dir(h[x.index-1],x.actual);return x.dir===dir(h[x.index-1],x.actual)}).length;
-  return {n,hit,exact,dir:dirHit};
+  // Use the already recorded out-of-sample predictions instead of rebuilding the
+  // entire walk-forward model on every render. This keeps the UI responsive.
+  const rows=(S.predictions||[]).filter(x=>x.prediction&&x.prediction.target!=null&&x.spinIndex<=h.length);
+  const n=rows.length,hit=rows.filter(x=>dist(x.prediction.target,x.actual)<=tol).length,exact=rows.filter(x=>dist(x.prediction.target,x.actual)===0).length;
+  const dirHit=rows.filter(x=>x.prediction.predDir&&x.actual!=null&&x.previous!=null&&x.prediction.predDir===dir(x.previous,x.actual)).length;
+  return {n,hit,exact,dir:dirHit,rows};
 }
 function rebuildPredictions(){
   const h=S.spins.map(x=>Number(x.result));const out=[];
@@ -257,13 +262,22 @@ function patternMemory(h){
   return mem;
 }
 function add(n){
-  const value=Number(n),h=S.spins.map(x=>Number(x.result));
-  S.spins.push({id:ids(S.spins),result:value,createdAt:new Date().toISOString()});
-  // Prediction for this actual spin is reconstructed from the prior history only.
-  rebuildPredictions();save();render();
+  const value=Number(n),h=S.spins.map(x=>Number(x.result)),now=new Date().toISOString();
+  // Calculate only the NEW out-of-sample prediction. Older predictions are immutable
+  // because they were generated from the history that existed at that moment.
+  const p=h.length>=12?model(h,S.settings.tol):null;
+  const spinIndex=h.length+1;
+  S.spins.push({id:ids(S.spins),result:value,createdAt:now});
+  if(p)S.predictions.push({id:ids(S.predictions),spinIndex,previous:h.at(-1)??null,prediction:p,actual:value,createdAt:now});
+  cache.clear();save();render();
 }
-function undo(){if(!S.spins.length)return;S.spins.pop();rebuildPredictions();cache.clear();save();render()}
-function clearAll(){if(confirm("¿Borrar todo el histórico?")){S={version:"13.3",spins:[],predictions:[],settings:{tol:3,chartWindow:60}};cache.clear();save();render()}}
+function undo(){
+  if(!S.spins.length)return;
+  S.spins.pop();
+  S.predictions=(S.predictions||[]).filter(x=>x.spinIndex<=S.spins.length);
+  cache.clear();save();render();
+}
+function clearAll(){if(confirm("¿Borrar todo el histórico?")){S={version:"13.5",spins:[],predictions:[],settings:{tol:3,chartWindow:60}};cache.clear();save();render()}}
 function esc(x){return String(x).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
 function render(){
   const h=S.spins.map(x=>Number(x.result)),t=trans(h),p=model(h,S.settings.tol),bt=backtest(h,S.settings.tol),tol=S.settings.tol;
@@ -304,7 +318,7 @@ function render(){
   draw(h);
 }
 function draw(h){
-  const c=$("chart"),d=devicePixelRatio||1,w=c.clientWidth||500,hh=c.clientHeight||220;c.width=w*d;c.height=hh*d;const x=c.getContext('2d');x.setTransform(d,0,0,d,0,0);x.clearRect(0,0,w,hh);const tol=S.settings.tol,rows=walkForward(h,tol),window=Number(S.settings.chartWindow),vals=rows.slice(-window).map((r,i,arr)=>{const upto=rows.slice(0,rows.length-arr.length+i+1);return upto.length?100*upto.filter(z=>z.hit).length/upto.length:0});if(!vals.length){x.fillStyle=getComputedStyle(document.body).getPropertyValue('--muted');x.font='12px system-ui';x.fillText('Aún no hay suficientes predicciones evaluadas.',12,25);return}const color=getComputedStyle(document.body).getPropertyValue('--accent');x.strokeStyle=color;x.lineWidth=2;x.beginPath();vals.forEach((y,i,a)=>{const xx=8+i*(w-16)/Math.max(1,a.length-1),yy=hh-12-y*(hh-24)/100;i?x.lineTo(xx,yy):x.moveTo(xx,yy)});x.stroke();
+  const c=$("chart"),d=devicePixelRatio||1,w=c.clientWidth||500,hh=c.clientHeight||220;c.width=w*d;c.height=hh*d;const x=c.getContext('2d');x.setTransform(d,0,0,d,0,0);x.clearRect(0,0,w,hh);const tol=S.settings.tol,rows=(S.predictions||[]).filter(x=>x.prediction&&x.prediction.target!=null&&x.spinIndex<=h.length).map(x=>({hit:dist(x.prediction.target,x.actual)<=tol})),window=Number(S.settings.chartWindow),vals=rows.slice(-window).map((r,i,arr)=>{const upto=rows.slice(0,rows.length-arr.length+i+1);return upto.length?100*upto.filter(z=>z.hit).length/upto.length:0});if(!vals.length){x.fillStyle=getComputedStyle(document.body).getPropertyValue('--muted');x.font='12px system-ui';x.fillText('Aún no hay suficientes predicciones evaluadas.',12,25);return}const color=getComputedStyle(document.body).getPropertyValue('--accent');x.strokeStyle=color;x.lineWidth=2;x.beginPath();vals.forEach((y,i,a)=>{const xx=8+i*(w-16)/Math.max(1,a.length-1),yy=hh-12-y*(hh-24)/100;i?x.lineTo(xx,yy):x.moveTo(xx,yy)});x.stroke();
   x.strokeStyle=getComputedStyle(document.body).getPropertyValue('--muted');x.lineWidth=1;x.setLineDash([4,4]);const by=hh-12-100*baseline(tol)*(hh-24)/100;x.beginPath();x.moveTo(8,by);x.lineTo(w-8,by);x.stroke();x.setLineDash([]);
 }
 $("theme").onclick=()=>{document.body.classList.toggle('night');const n=document.body.classList.contains('night');localStorage.setItem('roulettePatternLab.theme',n?'night':'day');$("theme").textContent=n?'Modo día':'Modo noche';draw(S.spins.map(x=>Number(x.result)))};
@@ -312,8 +326,8 @@ $("undo").onclick=undo;$("clear").onclick=clearAll;
 $("tol").value=String(S.settings.tol);$("chartWindow").value=String(S.settings.chartWindow);
 $("tol").onchange=()=>{S.settings.tol=Number($("tol").value);cache.clear();rebuildPredictions();save();render()};
 $("chartWindow").onchange=()=>{S.settings.chartWindow=Number($("chartWindow").value);save();draw(S.spins.map(x=>Number(x.result)))};
-$("txt").onclick=()=>{const h=S.spins.map(x=>Number(x.result)),l=["ROULETTE PATTERN LAB v13.4","SPIN | RESULT | JUMP | DIRECTION | DATE"];S.spins.forEach((s,i)=>{const p=i?h[i-1]:null;l.push((i+1)+" | "+s.result+" | "+(p==null?"":jmp(p,s.result))+" | "+(p==null?"":dir(p,s.result))+" | "+s.createdAt)});download("roulette-history-v13.4.txt",l.join("\n"),"text/plain")};
-$("json").onclick=()=>download("roulette-pattern-lab-v13.4.json",JSON.stringify(S,null,2),"application/json");
+$("txt").onclick=()=>{const h=S.spins.map(x=>Number(x.result)),l=["ROULETTE PATTERN LAB v13.5","SPIN | RESULT | JUMP | DIRECTION | DATE"];S.spins.forEach((s,i)=>{const p=i?h[i-1]:null;l.push((i+1)+" | "+s.result+" | "+(p==null?"":jmp(p,s.result))+" | "+(p==null?"":dir(p,s.result))+" | "+s.createdAt)});download("roulette-history-v13.5.txt",l.join("\n"),"text/plain")};
+$("json").onclick=()=>download("roulette-pattern-lab-v13.5.json",JSON.stringify(S,null,2),"application/json");
 $("restoreBtn").onclick=()=>$("restore").click();$("restore").onchange=e=>{const f=e.target.files[0];if(!f)return;f.text().then(t=>{const x=JSON.parse(t);if(!Array.isArray(x.spins))throw Error('Backup inválido');S=normalize(x);cache.clear();rebuildPredictions();save();$("tol").value=String(S.settings.tol);$("chartWindow").value=String(S.settings.chartWindow);render()}).catch(e=>alert(e.message))};
 function download(name,data,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 load();
