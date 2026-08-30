@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Roulette Pattern Lab v13.2</title>
+<title>Roulette Pattern Lab v12.1</title>
 <style>
 :root{--bg:#f5f7fa;--card:#fff;--text:#17202a;--muted:#687385;--line:#dfe4ea;--accent:#315efb;--soft:#eef2f7;--green:#16834b;--red:#c83232}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif}body.night{--bg:#0e1218;--card:#171c24;--text:#edf2f7;--muted:#9aa7b5;--line:#2a333f;--soft:#202833}
@@ -13,7 +13,7 @@
 <body>
 <div class="app">
 <header class="top">
-<div class="brand"><h1>Roulette Pattern Lab <span class="muted">v13.2</span></h1><p>Adaptive Pattern Engine · historial local · análisis walk-forward</p></div>
+<div class="brand"><h1>Roulette Pattern Lab <span class="muted">v12.1</span></h1><p>Adaptive Pattern Engine · historial local · análisis walk-forward</p></div>
 <div class="actions"><button class="btn" id="theme">Modo noche</button><button class="btn" id="undo">Deshacer</button><button class="btn" id="clear">Borrar historial</button><button class="btn" id="txt">Exportar TXT</button><button class="btn" id="json">Backup</button><button class="btn" id="restoreBtn">Restaurar</button><input id="restore" type="file" accept=".json" hidden></div>
 </header>
 
@@ -22,7 +22,7 @@
 
 <section class="card"><div class="head"><h2>Predicción en tiempo real</h2><span class="signal" id="signal">SIN DATOS</span></div>
 <div class="prediction"><div id="target" class="target black">—</div><div><div class="big" id="prob">—</div><div class="muted">probabilidad relativa del pocket líder</div><p id="predDir">Dirección: —</p><p id="predJump">Salto previsto: —</p><p><b>Zona ±<span id="tolLabel">3</span>:</b> <span id="zone">—</span></p></div></div>
-<div class="head" style="margin-top:12px"><h2>Predicciones alternativas</h2></div><div id="ranking"></div><div id="signalDetails" class="details"></div></section>
+<div class="head" style="margin-top:12px"><h2>Predicciones alternativas</h2></div><div id="ranking"></div></section>
 
 <section class="card"><div class="head"><h2>Estado del histórico</h2><span class="muted" id="storage">LOCAL</span></div>
 <div class="stats"><div class="stat"><span>Spins</span><b id="spins">0</b></div><div class="stat"><span>Transiciones</span><b id="trans">0</b></div><div class="stat"><span>Predicciones</span><b id="preds">0</b></div><div class="stat"><span>Evaluadas</span><b id="evals">0</b></div></div>
@@ -44,7 +44,7 @@
 
 <section class="card wide"><div class="head"><h2>Rendimiento ± tolerancia</h2><div class="controls"><span class="muted">Ventana</span><select id="chartWindow"><option value="30">30</option><option value="60" selected>60</option><option value="120">120</option></select></div></div><div class="chartwrap"><canvas id="chart"></canvas></div></section>
 </div>
-<div class="foot">v13.2 · Los porcentajes son estimaciones estadísticas del modelo, no garantías de resultados.</div>
+<div class="foot">v12.1 · Los porcentajes son estimaciones estadísticas del modelo, no garantías de resultados.</div>
 </div>
 
 <script>
@@ -115,11 +115,8 @@ let r=score.map((v,n)=>({n,v})).sort((a,b)=>b.v-a.v),sum=r.reduce((x,y)=>x+y.v,0
 }
 function backtest(h){let o={n:0,hit:Array(10).fill(0),dir:0};for(let i=12;i<h.length;i++){let p=model(h.slice(0,i));if(!p)continue;o.n++;for(let r=0;r<=9;r++)if(dist(p.target,h[i])<=r)o.hit[r]++;if(dir(h[i-1],h[i])===p.predDir)o.dir++}return o}
 function updateMemory(h){if(h.length<12)return;[...candidates(h,"sequence"),...candidates(h,"joint"),...candidates(h,"jump")].forEach(q=>{let k=q.type+"|"+q.key,m=S.memory[k]||{occ:0,next:{}};m.occ=Math.max(m.occ,q.occ);q.next.forEach(n=>m.next[n]=(m.next[n]||0)+1);S.memory[k]=m})}
-
-
 function add(n){let h=S.spins.map(x=>Number(x.result)),p=model(h),now=new Date().toISOString();S.predictions.push({id:ids(S.predictions),spinIndex:h.length+1,previous:h.at(-1)??null,prediction:p,actual:Number(n),createdAt:now});S.spins.push({id:ids(S.spins),result:Number(n),createdAt:now});updateMemory(h);save();render()}
 function render(){
-
  let h=S.spins.map(x=>Number(x.result)),t=trans(h),p=model(h),bt=backtest(h),tol=Number($("tol").value);
  $("counter").textContent=h.length+" spins";$("spins").textContent=h.length;$("trans").textContent=t.length;$("preds").textContent=S.predictions.filter(x=>x.prediction).length;$("evals").textContent=bt.n;
  $("history").innerHTML=h.slice(-80).reverse().map(n=>"<span class='result "+col(n)+"'>"+n+"</span>").join("");
@@ -143,8 +140,7 @@ $("theme").onclick=()=>{document.body.classList.toggle("night");let n=document.b
 $("undo").onclick=()=>{if(S.spins.length){S.spins.pop();S.predictions.pop();save();render()}};
 $("clear").onclick=()=>{if(confirm("¿Borrar todo el histórico?")){S={version:"12.0",spins:[],predictions:[],memory:{}};save();render()}};
 $("tol").onchange=render;$("chartWindow").onchange=()=>draw(S.spins.map(x=>Number(x.result)));
-$("txt").onclick=()=>{let l=["ROULETTE PATTERN LAB v13.2","SPIN | RESULT | JUMP | DIRECTION | DATE"];S.spins.forEach((s,i)=>{let p=i?S.spins[i-1].result:null;l.push((i+1)+" | "+s.result+" | "+(p==null?"":jmp(p,s.result))+" | "+(p==null?"":dir(p,s.result))+" | "+s.createdAt)});download("roulette-history-v13.2.txt",l.join("
-"),"text/plain")};
+$("txt").onclick=()=>{let l=["ROULETTE PATTERN LAB v12.1","SPIN | RESULT | JUMP | DIRECTION | DATE"];S.spins.forEach((s,i)=>{let p=i?S.spins[i-1].result:null;l.push((i+1)+" | "+s.result+" | "+(p==null?"":jmp(p,s.result))+" | "+(p==null?"":dir(p,s.result))+" | "+s.createdAt)});download("roulette-history-v12.txt",l.join("\n"),"text/plain")};
 $("json").onclick=()=>download("roulette-pattern-lab-v12.json",JSON.stringify(S,null,2),"application/json");
 $("restoreBtn").onclick=()=>$("restore").click();$("restore").onchange=e=>{let f=e.target.files[0];if(!f)return;f.text().then(t=>{let x=JSON.parse(t);if(!Array.isArray(x.spins))throw Error("Backup inválido");S={version:"12.0",spins:x.spins,predictions:Array.isArray(x.predictions)?x.predictions:[],memory:x.memory||{}};save();render()}).catch(e=>alert(e.message))};
 function download(name,data,type){let a=document.createElement("a");a.href=URL.createObjectURL(new Blob([data],{type}));a.download=name;a.click()}
