@@ -117,29 +117,9 @@ function backtest(h){let o={n:0,hit:Array(10).fill(0),dir:0};for(let i=12;i<h.le
 function updateMemory(h){if(h.length<12)return;[...candidates(h,"sequence"),...candidates(h,"joint"),...candidates(h,"jump")].forEach(q=>{let k=q.type+"|"+q.key,m=S.memory[k]||{occ:0,next:{}};m.occ=Math.max(m.occ,q.occ);q.next.forEach(n=>m.next[n]=(m.next[n]||0)+1);S.memory[k]=m})}
 
 
-/* v13.2 passive learning layer: observes the stable v12.1 model only. */
-function ensurePassiveLearning(){
- if(!S.passiveLearning)S.passiveLearning={sequence:{tests:0,hits:0},joint:{tests:0,hits:0},jump:{tests:0,hits:0},pair:{tests:0,hits:0},transition:{tests:0,hits:0}};
-}
-function updatePassiveLearning(h,actual){
- ensurePassiveLearning();
- if(h.length<12)return;
- ["sequence","joint","jump","pair","transition"].forEach(f=>{
-  let t=famTarget(h,f); if(t===null)return;
-  let s=S.passiveLearning[f]; s.tests++;
-  if(dist(t,actual)<=Number($("tol").value))s.hits++;
- });
-}
-
-function add(n){let h=S.spins.map(x=>Number(x.result)),p=model(h),now=new Date().toISOString();updatePassiveLearning(h,Number(n));S.predictions.push({id:ids(S.predictions),spinIndex:h.length+1,previous:h.at(-1)??null,prediction:p,actual:Number(n),createdAt:now});S.spins.push({id:ids(S.spins),result:Number(n),createdAt:now});updateMemory(h);save();render()}
+function add(n){let h=S.spins.map(x=>Number(x.result)),p=model(h),now=new Date().toISOString();S.predictions.push({id:ids(S.predictions),spinIndex:h.length+1,previous:h.at(-1)??null,prediction:p,actual:Number(n),createdAt:now});S.spins.push({id:ids(S.spins),result:Number(n),createdAt:now});updateMemory(h);save();render()}
 function render(){
-if($("signalDetails")){
- let h=S.spins.map(x=>Number(x.result)),p=model(h);
- if(p){
-  let sig=(p.signals||[]).slice(0,5).map(s=>s.f.toUpperCase()+": "+s.occ+" coincidencias").join(" · ");
-  $("signalDetails").textContent=sig||"Predicción basada en el histórico disponible.";
- }else $("signalDetails").textContent="Esperando suficiente histórico para generar señales.";
-}
+
  let h=S.spins.map(x=>Number(x.result)),t=trans(h),p=model(h),bt=backtest(h),tol=Number($("tol").value);
  $("counter").textContent=h.length+" spins";$("spins").textContent=h.length;$("trans").textContent=t.length;$("preds").textContent=S.predictions.filter(x=>x.prediction).length;$("evals").textContent=bt.n;
  $("history").innerHTML=h.slice(-80).reverse().map(n=>"<span class='result "+col(n)+"'>"+n+"</span>").join("");
@@ -163,7 +143,8 @@ $("theme").onclick=()=>{document.body.classList.toggle("night");let n=document.b
 $("undo").onclick=()=>{if(S.spins.length){S.spins.pop();S.predictions.pop();save();render()}};
 $("clear").onclick=()=>{if(confirm("¿Borrar todo el histórico?")){S={version:"12.0",spins:[],predictions:[],memory:{}};save();render()}};
 $("tol").onchange=render;$("chartWindow").onchange=()=>draw(S.spins.map(x=>Number(x.result)));
-$("txt").onclick=()=>{let l=["ROULETTE PATTERN LAB v13.2","SPIN | RESULT | JUMP | DIRECTION | DATE"];S.spins.forEach((s,i)=>{let p=i?S.spins[i-1].result:null;l.push((i+1)+" | "+s.result+" | "+(p==null?"":jmp(p,s.result))+" | "+(p==null?"":dir(p,s.result))+" | "+s.createdAt)});download("roulette-history-v12.txt",l.join("\n"),"text/plain")};
+$("txt").onclick=()=>{let l=["ROULETTE PATTERN LAB v13.2","SPIN | RESULT | JUMP | DIRECTION | DATE"];S.spins.forEach((s,i)=>{let p=i?S.spins[i-1].result:null;l.push((i+1)+" | "+s.result+" | "+(p==null?"":jmp(p,s.result))+" | "+(p==null?"":dir(p,s.result))+" | "+s.createdAt)});download("roulette-history-v13.2.txt",l.join("
+"),"text/plain")};
 $("json").onclick=()=>download("roulette-pattern-lab-v12.json",JSON.stringify(S,null,2),"application/json");
 $("restoreBtn").onclick=()=>$("restore").click();$("restore").onchange=e=>{let f=e.target.files[0];if(!f)return;f.text().then(t=>{let x=JSON.parse(t);if(!Array.isArray(x.spins))throw Error("Backup inválido");S={version:"12.0",spins:x.spins,predictions:Array.isArray(x.predictions)?x.predictions:[],memory:x.memory||{}};save();render()}).catch(e=>alert(e.message))};
 function download(name,data,type){let a=document.createElement("a");a.href=URL.createObjectURL(new Blob([data],{type}));a.download=name;a.click()}
