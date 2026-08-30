@@ -15,7 +15,7 @@
 <body>
 <div class="app">
 <header class="top">
-  <div class="brand"><h1>Roulette Pattern Lab <span class="muted">v13.0</span></h1><p>Adaptive Pattern Engine · walk-forward limpio · señales calibradas</p></div>
+  <div class="brand"><h1>Roulette Pattern Lab <span class="muted">v13.1</span></h1><p>Adaptive Pattern Engine · walk-forward limpio · señales calibradas</p></div>
   <div class="actions">
     <button class="btn" id="theme">Modo noche</button>
     <button class="btn" id="undo">Deshacer</button>
@@ -73,7 +73,7 @@ const KEY="roulettePatternLab.v13";
 const W=[0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
 const RED=new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
 const FAMILIES=["sequence","joint","jump","pair","transition"];
-let S={version:"13.0",spins:[],predictions:[],settings:{tol:3,chartWindow:60}};
+let S={version:"13.1",spins:[],predictions:[],settings:{tol:3,chartWindow:60}};
 const cache=new Map();
 const $=id=>document.getElementById(id);
 const idx=n=>W.indexOf(Number(n));
@@ -88,7 +88,7 @@ const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 
 function normalize(raw){
   const spins=Array.isArray(raw?.spins)?raw.spins.map((x,i)=>({id:Number(x.id)||i+1,result:Number(x.result),createdAt:x.createdAt||new Date().toISOString()})).filter(x=>x.result>=0&&x.result<=36):[];
-  return {version:"13.0",spins,predictions:Array.isArray(raw?.predictions)?raw.predictions:[],settings:{tol:Number(raw?.settings?.tol)||3,chartWindow:Number(raw?.settings?.chartWindow)||60}};
+  return {version:"13.1",spins,predictions:Array.isArray(raw?.predictions)?raw.predictions:[],settings:{tol:Number(raw?.settings?.tol)||3,chartWindow:Number(raw?.settings?.chartWindow)||60}};
 }
 function load(){
   try{let x=JSON.parse(localStorage.getItem(KEY)||"null");if(x&&Array.isArray(x.spins)){S=normalize(x);return}}catch(e){}
@@ -176,7 +176,12 @@ function model(h,tol=3){
   // Mild recency penalty only from current historical sample; no future/prediction-log leakage.
   const recent=h.slice(-8),cnt=new Map();recent.forEach(n=>cnt.set(n,(cnt.get(n)||0)+1));
   for(let n=0;n<37;n++){const c=cnt.get(n)||0;if(c>=3)score[n]*=(c===3?0.88:c===4?0.78:0.68)}
-  const ranked=score.map((v,n)=>({n,v,support:support[n]})).sort((a,b)=>b.v-a.v);
+  // Do not let the natural array order make pocket 0 the default when
+  // all candidates have effectively the same score.
+  const evidence=score.some((v,n)=>v>0.0200001 && (support[n]>0 || row[n]>0));
+  const ranked=score.map((v,n)=>({n,v,support:support[n],transition:row[n]})).sort((a,b)=>
+    b.v-a.v || b.support-a.support || b.transition-a.transition
+  );
   const sum=ranked.reduce((x,y)=>x+y.v,0);const r=ranked.map(x=>({...x,p:x.v/sum}));
   const top=r[0],second=r[1],lead=top.p-second.p;
   let cw=0,ccw=0;for(const x of r){const j=jmp(last,x.n);if(j>0)cw+=x.p;else if(j<0)ccw+=x.p}
@@ -185,12 +190,15 @@ function model(h,tol=3){
   const edge=top.p-baseline(tol);
   const supportPct=clamp(top.support/Math.max(1,active),0,1);
   const confidence=Math.round(clamp(35+lead*900+supportPct*30+clamp(avgEdge*500,-10,25),5,99));
-  const signal=active<2||confidence<45||edge<0.005?"NONE":confidence>=72&&edge>=0.02?"HIGH":"LOW";
-  return {target:top.n,prob:top.p,ranking:r.slice(0,12),predDir:cw>=ccw?"CW":"CCW",cw,ccw,adaptive:a,signals,seq:candidates(h,"sequence").slice(0,4),joint:candidates(h,"joint").slice(0,3),jumps:candidates(h,"jump").slice(0,3),edge,confidence,signal,lead,avgEdge,activeModels:active};
+  const signal=!evidence?"NONE":active<2||confidence<45||edge<0.005?"NONE":confidence>=72&&edge>=0.02?"HIGH":"LOW";
+  // No evidence = no prediction. This prevents 0 from appearing simply because
+  // it is the first element of the wheel array.
+  const target=evidence?top.n:null;
+  return {target,prob:evidence?top.p:0,ranking:r.slice(0,12),predDir:cw>=ccw?"CW":"CCW",cw,ccw,adaptive:a,signals,seq:candidates(h,"sequence").slice(0,4),joint:candidates(h,"joint").slice(0,3),jumps:candidates(h,"jump").slice(0,3),edge,confidence,signal,lead,avgEdge,activeModels:active};
 }
 function walkForward(h,tol=3){
   const key=h.join(",")+"|"+tol;if(cache.has(key))return cache.get(key);
-  const out=[];for(let i=12;i<h.length;i++){const hh=h.slice(0,i),p=model(hh,tol);if(p)out.push({index:i,target:p.target,actual:h[i],dir:p.predDir,hit:dist(p.target,h[i])<=tol,exact:dist(p.target,h[i])===0,edge:p.edge,confidence:p.confidence,signal:p.signal})}
+  const out=[];for(let i=12;i<h.length;i++){const hh=h.slice(0,i),p=model(hh,tol);if(p&&p.target!=null)out.push({index:i,target:p.target,actual:h[i],dir:p.predDir,hit:dist(p.target,h[i])<=tol,exact:dist(p.target,h[i])===0,edge:p.edge,confidence:p.confidence,signal:p.signal})}
   cache.set(key,out);if(cache.size>25)cache.delete(cache.keys().next().value);return out;
 }
 function backtest(h,tol=3){
@@ -216,7 +224,7 @@ function add(n){
   rebuildPredictions();save();render();
 }
 function undo(){if(!S.spins.length)return;S.spins.pop();rebuildPredictions();cache.clear();save();render()}
-function clearAll(){if(confirm("¿Borrar todo el histórico?")){S={version:"13.0",spins:[],predictions:[],settings:{tol:3,chartWindow:60}};cache.clear();save();render()}}
+function clearAll(){if(confirm("¿Borrar todo el histórico?")){S={version:"13.1",spins:[],predictions:[],settings:{tol:3,chartWindow:60}};cache.clear();save();render()}}
 function esc(x){return String(x).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
 function render(){
   const h=S.spins.map(x=>Number(x.result)),t=trans(h),p=model(h,S.settings.tol),bt=backtest(h,S.settings.tol),tol=S.settings.tol;
@@ -228,9 +236,9 @@ function render(){
   const cw=t.filter(x=>x.d==="CW").length,cc=t.filter(x=>x.d==="CCW").length;$('cw').textContent=pct(cw,t.length);$('ccw').textContent=pct(cc,t.length);
   $("tolLabel").textContent=tol;$("tolA").textContent=tol;$("winrate").textContent=pct(bt.hit,bt.n);$("base").textContent=(100*baseline(tol)).toFixed(1)+"%";
   if(p){
-    const tg=$("target");tg.textContent=p.target;tg.className="target "+col(p.target);$("prob").textContent=(p.prob*100).toFixed(2)+"%";
+    const tg=$("target");tg.textContent=p.target==null?"—":p.target;tg.className="target "+(p.target==null?"black":col(p.target));$("prob").textContent=p.target==null?"—":(p.prob*100).toFixed(2)+"%";
     const sm=p.signal==="HIGH"?"SEÑAL FUERTE":p.signal==="LOW"?"SEÑAL DÉBIL":"SIN EDGE";$('signal').textContent=sm;$('signal').className="signal "+(p.signal==='HIGH'?'high':p.signal==='LOW'?'low':'none');
-    const j=jmp(h.at(-1),p.target);$("predDir").textContent=`Dirección: ${p.predDir} · CW ${(p.cw*100).toFixed(1)}% / CCW ${(p.ccw*100).toFixed(1)}%`;$('predJump').textContent=`Salto previsto: ${j>=0?'+':''}${j} pockets`;$('zone').textContent=neigh(p.target,tol).join(" · ");
+    const j=p.target==null?null:jmp(h.at(-1),p.target);$("predDir").textContent=p.target==null?"Dirección: —":`Dirección: ${p.predDir} · CW ${(p.cw*100).toFixed(1)}% / CCW ${(p.ccw*100).toFixed(1)}%`;$('predJump').textContent=p.target==null?"Salto previsto: —":`Salto previsto: ${j>=0?'+':''}${j} pockets`;$('zone').textContent=p.target==null?"No hay zona con evidencia suficiente":neigh(p.target,tol).join(" · ");
     $('confidence').textContent=p.confidence+"/100";$('edge').textContent=(p.edge*100>=0?'+':'')+(p.edge*100).toFixed(1)+" pp";$('support').textContent=p.activeModels+"/"+FAMILIES.length;
     $('ranking').innerHTML=p.ranking.map((x,i)=>`<div class="rank"><div class="ranktop"><span>#${i+1} · ${x.n} ${x.support?`· ${x.support} modelos`:''}</span><b>${(x.p*100).toFixed(2)}%</b></div><div class="bar"><i style="width:${Math.max(2,100*x.p/p.ranking[0].p)}%"></i></div></div>`).join('');
     $('alerts').innerHTML=[...p.seq,...p.joint,...p.jumps].slice(0,7).map(q=>`<div class="alert"><b>${q.type==='sequence'?'SECUENCIA':q.type==='joint'?'SALTO + DIRECCIÓN':'PATRÓN DE SALTOS'}</b><br>${esc(q.key).replaceAll(',',' → ')} · ${q.occ} coincidencias · siguientes: ${q.next.join(', ')}</div>`).join('')||'<span class="muted">No hay patrón repetido suficiente.</span>';
@@ -240,7 +248,7 @@ function render(){
     $("target").textContent="—";$("target").className="target black";$("prob").textContent="—";$('signal').textContent=h.length<12?'ESPERANDO DATOS':'SIN SEÑAL';$('signal').className='signal';$('predDir').textContent='Dirección: —';$('predJump').textContent='Salto previsto: —';$('zone').textContent=h.length<12?'Se necesitan al menos 12 spins':'—';$('confidence').textContent='—';$('edge').textContent='—';$('support').textContent='—';$('ranking').innerHTML='';$('alerts').innerHTML=h.length<12?'Se necesitan al menos 12 spins.':'—';$('weights').innerHTML=FAMILIES.map(k=>`<div class="weight"><span class="muted">${k}</span><br><b>—</b><div class="muted">Sin muestra</div></div>`).join('');$('weightSummary').textContent='';
   }
   const mem=patternMemory(h);$('library').innerHTML=Object.values(mem).sort((a,b)=>b.occ-a.occ).slice(0,40).map(v=>`<div class="prow" style="grid-template-columns:1fr"><span><b>${esc(v.type)}|${esc(v.key)}</b> · ${v.occ} coincidencias · ${Object.entries(v.next).sort((a,b)=>b[1]-a[1]).map(x=>x[0]+"("+x[1]+")").join(', ')}</span></div>`).join('')||'—';
-  $('predHistory').innerHTML=S.predictions.slice(-60).reverse().map(x=>{const w=x.actual!=null&&dist(x.prediction.target,x.actual)<=tol;return `<div class="prow"><b>#${x.spinIndex}</b><span>${x.prediction.target} → ${x.actual}</span><span>${x.prediction.confidence}/100</span><b class="${w?'win':'loss'}">${w?'WIN':'LOSS'}</b></div>`}).join('')||'—';
+  $('predHistory').innerHTML=S.predictions.slice(-60).reverse().map(x=>{const w=x.actual!=null&&x.prediction.target!=null&&dist(x.prediction.target,x.actual)<=tol;return `<div class="prow"><b>#${x.spinIndex}</b><span>${x.prediction.target==null?"—":x.prediction.target} → ${x.actual}</span><span>${x.prediction.confidence}/100</span><b class="${w?'win':'loss'}">${w?'WIN':'LOSS'}</b></div>`}).join('')||'—';
   draw(h);
 }
 function draw(h){
