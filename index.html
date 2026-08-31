@@ -3,27 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Roulette Pattern Lab v13.5</title>
-<style>
-:root{--bg:#f5f7fa;--card:#fff;--text:#17202a;--muted:#687385;--line:#dfe4ea;--accent:#315efb;--soft:#eef2f7;--green:#16834b;--red:#c83232;--amber:#8a6400}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif}body.night{--bg:#0e1218;--card:#171c24;--text:#edf2f7;--muted:#9aa7b5;--line:#2a333f;--soft:#202833}
-.app{max-width:1180px;margin:auto;padding:18px}.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}.brand h1{margin:0;font-size:22px}.brand p{margin:4px 0 0;color:var(--muted);font-size:12px}.actions{display:flex;gap:7px;flex-wrap:wrap}.btn,select{border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:9px;padding:8px 11px;font-size:12px}.btn{cursor:pointer}.btn:active{transform:scale(.96)}.grid{display:grid;grid-template-columns:1.15fr .85fr;gap:14px}.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;min-width:0}.wide{grid-column:1/-1}.head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:11px}.head h2{font-size:14px;margin:0}.muted{color:var(--muted);font-size:11px}.numbers{display:grid;grid-template-columns:repeat(12,1fr);gap:5px}.num{border:0;border-radius:7px;min-height:34px;color:#fff;font-weight:700;cursor:pointer;transition:transform .08s}.num.red{background:#c83232}.num.black{background:#20242a}.num.green{background:#16834b}.num.pressed{transform:scale(.88);filter:brightness(1.25)}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.stat{background:var(--soft);border-radius:10px;padding:9px}.stat span{display:block;color:var(--muted);font-size:10px}.stat b{font-size:17px}.prediction{display:grid;grid-template-columns:100px 1fr;gap:14px;align-items:center}.target{width:100px;height:100px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:30px;font-weight:800}.target.red{background:#c83232}.target.black{background:#20242a}.target.green{background:#16834b}.big{font-size:24px;font-weight:800}.signal{display:inline-block;border-radius:999px;padding:5px 9px;font-size:10px;font-weight:700;background:var(--soft)}.signal.high{background:#d9f3e4;color:var(--green)}.signal.low{background:#fff0c9;color:var(--amber)}.signal.none{background:#f3dde0;color:#9b2933}.details{font-size:12px;line-height:1.6}.scrollbox{overflow-x:auto;overflow-y:hidden;white-space:nowrap;display:flex;gap:6px;padding-bottom:4px;touch-action:pan-x}.result,.chip{display:inline-flex;flex:0 0 auto;align-items:center;justify-content:center;border-radius:8px;padding:7px 10px;font-size:12px;font-weight:700;background:var(--soft)}.result{color:#fff;min-width:34px}.result.red{background:#c83232}.result.black{background:#20242a}.result.green{background:#16834b}.rank{margin:7px 0}.ranktop{display:flex;justify-content:space-between;font-size:11px}.bar{height:6px;background:var(--soft);border-radius:99px;overflow:hidden;margin-top:4px}.bar i{display:block;height:100%;background:var(--accent)}.rows{max-height:300px;overflow-y:auto}.prow{display:grid;grid-template-columns:48px minmax(120px,1fr) 75px 68px 68px;gap:7px;padding:7px 0;border-bottom:1px solid var(--line);font-size:11px}.win{color:var(--green)}.loss{color:var(--red)}.weights{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}.weight{background:var(--soft);padding:9px;border-radius:9px}.weight b{font-size:17px}.alert{padding:9px;margin:6px 0;background:var(--soft);border-left:3px solid var(--accent);border-radius:7px;font-size:11px}.controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.chartwrap{height:220px}.chartwrap canvas{width:100%;height:100%}.chartstats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}.chartstat{background:var(--soft);border-radius:10px;padding:9px}.chartstat span{display:block;color:var(--muted);font-size:10px}.chartstat b{font-size:17px}.foot{margin-top:10px;color:var(--muted);font-size:10px;text-align:center}.kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}.k{background:var(--soft);border-radius:10px;padding:9px}.k span{display:block;color:var(--muted);font-size:10px}.k b{font-size:15px}.tag{display:inline-block;background:var(--soft);border-radius:999px;padding:3px 7px;font-size:10px;margin:2px 2px 0 0}.ok{color:var(--green)}.warn{color:var(--amber)}.bad{color:var(--red)}
-@media(max-width:800px){.chartstats{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}.wide{grid-column:auto}.numbers{grid-template-columns:repeat(8,1fr)}.stats{grid-template-columns:repeat(2,1fr)}.weights{grid-template-columns:repeat(2,1fr)}.prediction{grid-template-columns:75px 1fr}.target{width:75px;height:75px;font-size:24px}}
-@media(max-width:460px){.app{padding:10px}.numbers{grid-template-columns:repeat(6,1fr)}.prediction{grid-template-columns:75px 1fr}.prow{grid-template-columns:42px minmax(90px,1fr) 60px 56px 56px}}
-</style>
+<title>Adaptive Pattern Engine v14.0</title>
+<link rel="stylesheet" href="css/app.css">
 </head>
 <body>
 <div class="app">
 <header class="top">
-  <div class="brand"><h1>Roulette Pattern Lab <span class="muted">v13.5</span></h1><p>Adaptive Pattern Engine · walk-forward limpio · señales calibradas</p></div>
+  <div class="brand"><h1>Adaptive Pattern Engine</h1></div>
   <div class="actions">
     <button class="btn" id="theme">Modo noche</button>
     <button class="btn" id="undo">Deshacer</button>
     <button class="btn" id="clear">Borrar historial</button>
-    <button class="btn" id="txt">Exportar TXT</button>
-    <button class="btn" id="json">Backup</button>
-    <button class="btn" id="restoreBtn">Restaurar</button>
-    <input id="restore" type="file" accept=".json" hidden>
   </div>
 </header>
 
@@ -40,312 +30,36 @@
       <p id="predDir">Dirección: —</p><p id="predJump">Salto previsto: —</p><p><b>Zona ±<span id="tolLabel">3</span>:</b> <span id="zone">—</span></p>
     </div>
   </div>
-  <div class="kpi"><div class="k"><span>Confianza</span><b id="confidence">—</b></div><div class="k"><span>Edge ±<span class="tolText">3</span></span><b id="edge">—</b></div><div class="k"><span>Modelos activos</span><b id="support">—</b></div></div>
-  <div class="head" style="margin-top:12px"><h2>Predicciones alternativas</h2></div><div id="ranking"></div>
+  <div class="kpi"><div class="k"><span>Confianza</span><b id="confidence">—</b></div><div class="k"><span>Edge ±<span class="tolText">3</span></span><b id="edge">—</b></div><div class="k"><span>Modelos activos</span><b id="support">—</b></div><div class="k"><span>Calidad</span><b id="qualityMini">—</b></div></div>
+  <div class="head" style="margin-top:12px"><h2>Predicciones alternativas</h2><span class="muted">Top 3</span></div><div id="ranking"></div>
 </section>
 
-<section class="card" id="historicalState" style="display:none">
-  <div class="head"><h2>Estado del histórico</h2><span class="muted" id="storage">LOCAL</span></div>
-  <div class="stats"><div class="stat"><span>Spins</span><b id="spins">0</b></div><div class="stat"><span>Transiciones</span><b id="trans">0</b></div><div class="stat"><span>Predicciones</span><b id="preds">0</b></div><div class="stat"><span>Evaluadas</span><b id="evals">0</b></div></div>
-  <div class="stats" style="margin-top:8px"><div class="stat"><span>CW</span><b id="cw">—</b></div><div class="stat"><span>CCW</span><b id="ccw">—</b></div><div class="stat"><span>±<span id="tolA">3</span></span><b id="winrate">—</b></div><div class="stat"><span>Base ±<span class="tolText">3</span></span><b id="base">—</b></div></div>
-</section>
-
-<section class="card wide"><div class="head"><h2>Últimos resultados</h2></div><div id="history" class="scrollbox"></div></section>
+<section class="card wide"><div class="head"><h2>Últimos resultados</h2><select id="tol"><option value="1">±1</option><option value="2">±2</option><option value="3" selected>±3</option><option value="4">±4</option><option value="5">±5</option><option value="6">±6</option><option value="7">±7</option><option value="8">±8</option><option value="9">±9</option></select></div><div id="history" class="scrollbox"></div></section>
 <section class="card"><div class="head"><h2>Saltos recientes</h2></div><div id="jumps" class="scrollbox"></div></section>
 <section class="card"><div class="head"><h2>Direcciones recientes</h2></div><div id="dirs" class="scrollbox"></div></section>
 
-<section class="card"><div class="head"><h2>Configuración de tolerancia</h2><select id="tol"><option value="1">±1</option><option value="2">±2</option><option value="3" selected>±3</option><option value="4">±4</option><option value="5">±5</option><option value="6">±6</option><option value="7">±7</option><option value="8">±8</option><option value="9">±9</option></select></div><div class="details">La tolerancia define cuándo una predicción se considera ganadora. El baseline es la cobertura esperada por azar para la misma zona.</div></section>
-<section class="card"><div class="head"><h2>Patrones activos</h2></div><div id="alerts"></div></section>
+<section class="card">
+  <div class="head"><h2>Calidad de predicción</h2><span class="muted">calibración interna</span></div>
+  <div class="quality"><div><div class="qualityScore" id="quality">—</div><div class="muted">/100</div></div><div><div class="qualityBar"><i id="qualityFill" style="width:0%"></i></div><div class="muted" id="qualitySummary" style="margin-top:8px"></div><div class="qualityGrid"><div class="q"><span>Consenso</span><b id="qConsensus">—</b></div><div class="q"><span>Estabilidad</span><b id="qStability">—</b></div><div class="q"><span>Edge robusto</span><b id="qRobust">—</b></div><div class="q"><span>Muestra</span><b id="qSample">—</b></div><div class="q"><span>Recencia</span><b id="qRecent">—</b></div></div></div></div>
+</section>
+
+<section class="card">
+  <div class="head"><h2>Diagnóstico del aprendizaje</h2><span class="muted">walk-forward</span></div>
+  <div class="kpi"><div class="k"><span>Edge robusto</span><b id="robustEdge">—</b></div><div class="k"><span>Consenso</span><b id="consensus">—</b></div><div class="k"><span>Estabilidad</span><b id="stability">—</b></div><div class="k"><span>Evaluadas</span><b id="evals">0</b></div></div>
+  <p id="learningSummary" class="muted"></p>
+</section>
 
 <section class="card wide"><div class="head"><h2>Pesos adaptativos</h2><span class="muted">aprendizaje walk-forward</span></div><div id="weights" class="weights"></div><p id="weightSummary" class="muted"></p></section>
-<section class="card wide"><div class="head"><h2>Diagnóstico del aprendizaje</h2><span class="muted">recencia · consenso · control de sobreajuste</span></div><div class="kpi"><div class="k"><span>Edge robusto</span><b id="robustEdge">—</b></div><div class="k"><span>Consenso</span><b id="consensus">—</b></div><div class="k"><span>Estabilidad</span><b id="stability">—</b></div></div><p id="learningSummary" class="muted"></p></section>
+<section class="card"><div class="head"><h2>Patrones activos</h2></div><div id="alerts"></div></section>
 <section class="card"><div class="head"><h2>Historial de predicciones</h2></div><div id="predHistory" class="rows"></div></section>
-<section class="card"><div class="head"><h2>Biblioteca de patrones</h2></div><div id="library" class="rows"></div></section>
 
-<section class="card wide"><div class="head"><h2>Rendimiento ± tolerancia</h2><div class="controls"><span class="muted">Ventana</span><select id="chartWindow"><option value="30">30</option><option value="60" selected>60</option><option value="120">120</option></select></div></div><div class="chartstats"><div class="chartstat"><span>Rendimiento actual</span><b id="chartRate">—</b></div><div class="chartstat"><span>Baseline</span><b id="chartBase">—</b></div><div class="chartstat"><span>Edge</span><b id="chartEdge">—</b></div><div class="chartstat"><span>Evaluadas</span><b id="chartEval">—</b></div></div><div class="chartwrap"><canvas id="chart"></canvas></div></section>
+<section class="card wide"><div class="head"><h2>Rendimiento ± tolerancia</h2><div style="display:flex;gap:8px;align-items:center"><span class="muted">Ventana</span><select id="chartWindow"><option value="30">30</option><option value="60" selected>60</option><option value="120">120</option></select></div></div>
+<div class="chartstats"><div class="chartstat"><span>Win rate</span><b id="chartRate">—</b></div><div class="chartstat"><span>Baseline</span><b id="chartBase">—</b></div><div class="chartstat"><span>Edge</span><b id="chartEdge">—</b></div><div class="chartstat"><span>Evaluadas</span><b id="chartEval">0</b></div><div class="chartstat"><span>Últimas 20</span><b id="chartRecent">—</b></div></div>
+<div class="chartwrap"><canvas id="chart"></canvas></div></section>
 </div>
-<div class="foot">v13.6 · Aprendizaje walk-forward con recencia, meta-consenso y control conservador del sobreajuste. No implica una ventaja garantizada sobre una ruleta justa.</div>
+<div class="foot">v14.0 · walk-forward · predicciones fuera de muestra · almacenamiento local</div>
 </div>
 
-<script>
-(function(){
-"use strict";
-const KEY="roulettePatternLab.v13.6";
-const W=[0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
-const RED=new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
-const FAMILIES=["sequence","joint","jump","pair","transition"];
-let S={version:"13.6",spins:[],predictions:[],settings:{tol:3,chartWindow:60}};
-const cache=new Map();
-const $=id=>document.getElementById(id);
-const idx=n=>W.indexOf(Number(n));
-const jmp=(a,b)=>{let d=(idx(b)-idx(a)+37)%37;return d>18?d-37:d};
-const dist=(a,b)=>Math.abs(jmp(a,b));
-const dir=(a,b)=>{let j=jmp(a,b);return j>0?"CW":j<0?"CCW":"SAME"};
-const pct=(a,b)=>b?(100*a/b).toFixed(1)+"%":"—";
-const col=n=>Number(n)===0?"green":RED.has(Number(n))?"red":"black";
-const neigh=(n,r)=>{let i=idx(n);return Array.from({length:2*r+1},(_,k)=>W[(i-r+k+37)%37])};
-const baseline=tol=>(2*tol+1)/37;
-const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
-
-function normalize(raw){
-  const spins=Array.isArray(raw?.spins)?raw.spins.map((x,i)=>({id:Number(x.id)||i+1,result:Number(x.result),createdAt:x.createdAt||new Date().toISOString()})).filter(x=>x.result>=0&&x.result<=36):[];
-  return {version:"13.6",spins,predictions:Array.isArray(raw?.predictions)?raw.predictions:[],settings:{tol:Number(raw?.settings?.tol)||3,chartWindow:Number(raw?.settings?.chartWindow)||60}};
-}
-function load(){
-  try{let x=JSON.parse(localStorage.getItem(KEY)||"null");if(x&&Array.isArray(x.spins)){S=normalize(x);return}}catch(e){}
-  try{let x=JSON.parse(localStorage.getItem("roulettePatternLab.v13.4")||"null");if(x&&Array.isArray(x.spins)){S=normalize(x);rebuildPredictions();save();return}}catch(e){}
-  try{let x=JSON.parse(localStorage.getItem("roulettePatternLab.v12")||"null");if(x&&Array.isArray(x.spins)){S=normalize(x);save();return}}catch(e){}
-  try{let x=JSON.parse(localStorage.getItem("roulettePatternLab.v10")||"null");if(x&&Array.isArray(x.spins)){S=normalize(x);save()}}catch(e){}
-}
-function save(){localStorage.setItem(KEY,JSON.stringify(S))}
-function ids(a){return a.reduce((m,x)=>Math.max(m,Number(x.id)||0),0)+1}
-function trans(h){let a=[];for(let i=1;i<h.length;i++)a.push({from:h[i-1],to:h[i],j:jmp(h[i-1],h[i]),d:dir(h[i-1],h[i])});return a}
-
-function candidates(h,f){
-  if(h.length<12)return [];
-  const out=[];
-  if(f==="sequence"){
-    for(let l=2;l<=Math.min(8,h.length-1);l++){
-      const key=h.slice(-l).join(","),next=[];
-      for(let i=0;i+l<h.length;i++)if(h.slice(i,i+l).join(",")===key)next.push(h[i+l]);
-      if(next.length>=2)out.push({type:f,len:l,key,occ:next.length,next});
-    }
-  }else if(f==="jump"){
-    const a=trans(h).map(x=>x.j);
-    for(let l=2;l<=Math.min(6,a.length-1);l++){
-      const key=a.slice(-l).join(","),next=[];
-      for(let i=0;i+l<a.length;i++)if(a.slice(i,i+l).join(",")===key)next.push(a[i+l]);
-      if(next.length>=2)out.push({type:f,len:l,key,occ:next.length,next});
-    }
-  }else if(f==="joint"){
-    const a=trans(h).map(x=>x.j+":"+x.d);
-    for(let l=2;l<=Math.min(6,a.length-1);l++){
-      const key=a.slice(-l).join("|"),next=[];
-      for(let i=0;i+l<a.length;i++)if(a.slice(i,i+l).join("|")===key)next.push(h[i+l]);
-      if(next.length>=2)out.push({type:f,len:l,key,occ:next.length,next});
-    }
-  }else if(f==="pair"){
-    const key=h.slice(-2).join(","),next=[];for(let i=0;i+2<h.length;i++)if(h[i]+","+h[i+1]===key)next.push(h[i+2]);
-    if(next.length>=2)out.push({type:f,len:2,key,occ:next.length,next});
-  }else{
-    const key=String(h.at(-1)),next=[];for(let i=0;i<h.length-1;i++)if(h[i]===h.at(-1))next.push(h[i+1]);
-    if(next.length>=2)out.push({type:f,len:1,key,occ:next.length,next});
-  }
-  return out.sort((a,b)=>b.len-a.len||b.occ-a.occ);
-}
-function weightedFamilyTarget(h,f){
-  const cs=candidates(h,f);if(!cs.length)return null;
-  const q=Array(37).fill(0);
-  cs.slice(0,5).forEach(p=>{const reliability=clamp(0.65+0.05*Math.min(p.occ,8)+0.04*Math.min(p.len,7),0.65,1.2);p.next.forEach(n=>q[idx(n)]+=reliability)});
-  let best=0;for(let n=1;n<37;n++)if(q[n]>q[best])best=n;
-  return q[best]?best:null;
-}
-function familyTargetAt(h,f){return weightedFamilyTarget(h,f)}
-function binomialRobustEdge(hit,n,tol){
-  if(!n)return 0;
-  const ph=hit/n, se=Math.sqrt(Math.max(0,ph*(1-ph)/n));
-  return ph-baseline(tol)-1.96*se;
-}
-function familyBacktest(h,f,tol=3){
-  if(h.length<14)return {n:0,hit:0,exact:0,edge:0,recentEdge:0,robustEdge:0,stability:0};
-  const start=Math.max(12,h.length-120), rows=[];
-  for(let i=start;i<h.length;i++){
-    const t=familyTargetAt(h.slice(0,i),f);if(t==null)continue;
-    rows.push({hit:dist(t,h[i])<=tol,exact:dist(t,h[i])===0});
-  }
-  const n=rows.length,hit=rows.filter(x=>x.hit).length,exact=rows.filter(x=>x.exact).length;
-  if(!n)return {n:0,hit:0,exact:0,edge:0,recentEdge:0,robustEdge:0,stability:0};
-  const recent=rows.slice(-Math.min(20,n)), rh=recent.filter(x=>x.hit).length;
-  const edge=hit/n-baseline(tol),recentEdge=rh/recent.length-baseline(tol),robustEdge=binomialRobustEdge(hit,n,tol);
-  const agreement=1-Math.min(1,Math.abs(edge-recentEdge)/Math.max(0.05,Math.abs(edge)+0.02));
-  return {n,hit,exact,edge,recentEdge,robustEdge,stability:clamp(agreement,0,1)};
-}
-function metaBacktest(h,tol=3){
-  const combos={};
-  for(let i=Math.max(14,h.length-120);i<h.length;i++){
-    const hh=h.slice(0,i), targets={};
-    FAMILIES.forEach(f=>targets[f]=familyTargetAt(hh,f));
-    const active=FAMILIES.filter(f=>targets[f]!=null);
-    for(let a=0;a<active.length;a++)for(let b=a+1;b<active.length;b++){
-      const key=active[a]+'+'+active[b],same=targets[active[a]]===targets[active[b]];
-      if(!same)continue;
-      if(!combos[key])combos[key]={n:0,hit:0};combos[key].n++;if(dist(targets[active[a]],h[i])<=tol)combos[key].hit++;
-    }
-  }
-  const out={};Object.entries(combos).forEach(([k,v])=>out[k]={...v,edge:v.hit/v.n-baseline(tol),robustEdge:binomialRobustEdge(v.hit,v.n,tol)});return out;
-}
-function adaptive(h,tol=3){
-  const perf={},weights={};
-  FAMILIES.forEach(f=>{
-    const p=familyBacktest(h,f,tol);perf[f]=p;
-    const sample=clamp(p.n/50,0,1),robust=p.robustEdge;
-    const recency=clamp(1+p.recentEdge*4,0.65,1.35);
-    const stability=0.75+0.25*p.stability;
-    weights[f]=clamp(0.65+0.75*sample*clamp(1+robust*6,0.45,1.6)*recency*stability,0.45,1.9);
-  });
-  return {perf,weights,meta:metaBacktest(h,tol)};
-}
-function model(h,tol=3){
-  if(h.length<12)return null;
-  const a=adaptive(h,tol),score=Array(37).fill(0.02),support=Array(37).fill(0),signals=[];
-  const familyTargets={};
-  for(const f of FAMILIES){
-    const w=a.weights[f],cs=candidates(h,f),ft=weightedFamilyTarget(h,f);familyTargets[f]=ft;
-    cs.slice(0,5).forEach(q=>{
-      const lenBoost=q.len>=6?1.28:q.len>=4?1.13:1;
-      const occBoost=clamp(Math.log2(q.occ+1)/2,0.5,1.35);
-      const sampleConfidence=clamp(q.occ/6,0.35,1);
-      const localW=w*lenBoost*occBoost*sampleConfidence;
-      const unique=[...new Set(q.next)];
-      unique.forEach(n=>{score[idx(n)]+=localW/Math.max(1,unique.length);support[idx(n)]++});
-      signals.push({f,key:q.key,occ:q.occ,w:localW,next:q.next});
-    });
-  }
-  // Meta-learning: reward agreement between independently trained families only
-  // when that combination has demonstrated positive out-of-sample performance.
-  Object.entries(a.meta).forEach(([key,m])=>{
-    if(m.n<5||m.robustEdge<=0)return;
-    const fs=key.split('+'),target=familyTargets[fs[0]];
-    if(target!=null&&familyTargets[fs[1]]===target){
-      score[idx(target)]+=clamp(m.robustEdge*18,0.05,0.65);support[idx(target)]+=0.5;
-    }
-  });
-  const last=h.at(-1),row=Array(37).fill(0);
-  for(let i=0;i<h.length-1;i++)if(h[i]===last)row[idx(h[i+1])]++;
-  const rz=row.reduce((x,y)=>x+y,0);if(rz)for(let n=0;n<37;n++)if(row[n])score[n]+=1.05*(row[n]/rz);
-  const recent=h.slice(-8),cnt=new Map();recent.forEach(n=>cnt.set(n,(cnt.get(n)||0)+1));
-  for(let n=0;n<37;n++){const c=cnt.get(n)||0;if(c>=3)score[n]*=(c===3?0.88:c===4?0.78:0.68)}
-  const evidence=score.some((v,n)=>v>0.0200001&&(support[n]>0||row[n]>0));
-  const ranked=score.map((v,n)=>({n,v,support:support[n],transition:row[n]})).sort((a,b)=>b.v-a.v||b.support-a.support||b.transition-a.transition);
-  const sum=ranked.reduce((x,y)=>x+y.v,0),r=ranked.map(x=>({...x,p:x.v/sum}));
-  const top=r[0],second=r[1],lead=top.p-second.p;
-  let cw=0,ccw=0;for(const x of r){const j=jmp(last,x.n);if(j>0)cw+=x.p;else if(j<0)ccw+=x.p}
-  const active=FAMILIES.filter(f=>a.perf[f].n>0).length;
-  const edges=FAMILIES.map(f=>a.perf[f].n?a.perf[f].robustEdge:0).filter(x=>x!==0);
-  const avgRobust=edges.length?edges.reduce((s,x)=>s+x,0)/edges.length:0;
-  const recentEdges=FAMILIES.map(f=>a.perf[f].n?a.perf[f].recentEdge:0).filter(x=>x!==0);
-  const avgRecent=recentEdges.length?recentEdges.reduce((s,x)=>s+x,0)/recentEdges.length:0;
-  const edge=top.p-baseline(tol), robustEdge=edge-1.96*Math.sqrt(Math.max(0,top.p*(1-top.p)/Math.max(1,Math.round(active*20))));
-  const supportPct=clamp(top.support/Math.max(1,active),0,1);
-  const consensusCount=Object.values(familyTargets).filter(x=>x===top.n).length;
-  const consensus=active?consensusCount/active:0;
-  const stability=clamp(1-Math.abs(avgRobust-avgRecent)/Math.max(0.05,Math.abs(avgRobust)+0.02),0,1);
-  const confidence=Math.round(clamp(30+lead*900+supportPct*25+consensus*25+stability*10+clamp(avgRobust*500,-10,25),5,99));
-  const signal=!evidence||active<2||confidence<45||edge<0.005||robustEdge<=0?'NONE':confidence>=72&&robustEdge>=0.01?'HIGH':'LOW';
-  const target=evidence?top.n:null;
-  const jump=target==null?null:jmp(last,target);
-  return {target,prob:evidence?top.p:0,ranking:r.slice(0,12),predDir:cw>=ccw?'CW':'CCW',cw,ccw,adaptive:a,signals,seq:candidates(h,'sequence').slice(0,4),joint:candidates(h,'joint').slice(0,3),jumps:candidates(h,'jump').slice(0,3),edge,robustEdge,confidence,signal,lead,avgEdge:avgRobust,avgRecent,stability,consensusCount,activeModels:active,jump};
-}
-function walkForward(h,tol=3){
-  const key=h.join(",")+"|"+tol;if(cache.has(key))return cache.get(key);
-  const out=[];for(let i=12;i<h.length;i++){const hh=h.slice(0,i),p=model(hh,tol);if(p&&p.target!=null)out.push({index:i,target:p.target,actual:h[i],dir:p.predDir,hit:dist(p.target,h[i])<=tol,exact:dist(p.target,h[i])===0,edge:p.edge,confidence:p.confidence,signal:p.signal})}
-  cache.set(key,out);if(cache.size>25)cache.delete(cache.keys().next().value);return out;
-}
-function backtest(h,tol=3){
-  // Use the already recorded out-of-sample predictions instead of rebuilding the
-  // entire walk-forward model on every render. This keeps the UI responsive.
-  const rows=(S.predictions||[]).filter(x=>x.prediction&&x.prediction.target!=null&&x.spinIndex<=h.length);
-  const n=rows.length,hit=rows.filter(x=>dist(x.prediction.target,x.actual)<=tol).length,exact=rows.filter(x=>dist(x.prediction.target,x.actual)===0).length;
-  const dirHit=rows.filter(x=>x.prediction.predDir&&x.actual!=null&&x.previous!=null&&x.prediction.predDir===dir(x.previous,x.actual)).length;
-  return {n,hit,exact,dir:dirHit,rows};
-}
-function rebuildPredictions(){
-  const h=S.spins.map(x=>Number(x.result));const out=[];
-  for(let i=0;i<h.length;i++){
-    const prior=h.slice(0,i);if(prior.length<12)continue;const p=model(prior,S.settings.tol);if(p)out.push({id:out.length+1,spinIndex:i+1,previous:prior.at(-1)??null,prediction:p,actual:h[i],createdAt:S.spins[i].createdAt||new Date().toISOString()});
-  }
-  S.predictions=out;
-}
-function patternMemory(h){
-  const mem={};
-  [...FAMILIES].forEach(f=>{candidates(h,f).forEach(q=>{const k=q.type+"|"+q.key;if(!mem[k])mem[k]={type:q.type,key:q.key,occ:q.occ,next:{}};mem[k].occ=Math.max(mem[k].occ,q.occ);q.next.forEach(n=>mem[k].next[n]=(mem[k].next[n]||0)+1)})});
-  return mem;
-}
-function add(n){
-  const value=Number(n),h=S.spins.map(x=>Number(x.result)),now=new Date().toISOString();
-  // Calculate only the NEW out-of-sample prediction. Older predictions are immutable
-  // because they were generated from the history that existed at that moment.
-  const p=h.length>=12?model(h,S.settings.tol):null;
-  const spinIndex=h.length+1;
-  S.spins.push({id:ids(S.spins),result:value,createdAt:now});
-  if(p)S.predictions.push({id:ids(S.predictions),spinIndex,previous:h.at(-1)??null,prediction:p,actual:value,createdAt:now});
-  cache.clear();save();render();
-}
-function undo(){
-  if(!S.spins.length)return;
-  S.spins.pop();
-  S.predictions=(S.predictions||[]).filter(x=>x.spinIndex<=S.spins.length);
-  cache.clear();save();render();
-}
-function clearAll(){if(confirm("¿Borrar todo el histórico?")){S={version:"13.6",spins:[],predictions:[],settings:{tol:3,chartWindow:60}};cache.clear();save();render()}}
-function esc(x){return String(x).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
-function render(){
-  const h=S.spins.map(x=>Number(x.result)),t=trans(h),p=model(h,S.settings.tol),bt=backtest(h,S.settings.tol),tol=S.settings.tol;
-  document.querySelectorAll('.tolText').forEach(e=>e.textContent=tol);
-  $("counter").textContent=h.length+" spins";$("spins").textContent=h.length;$("trans").textContent=t.length;$("preds").textContent=S.predictions.length;$("evals").textContent=bt.n;
-  $("history").innerHTML=h.slice(-80).reverse().map(n=>`<span class="result ${col(n)}">${n}</span>`).join("");
-  $("jumps").innerHTML=t.slice(-80).reverse().map(x=>`<span class="chip">${x.j>=0?"+":""}${x.j}</span>`).join("");
-  $("dirs").innerHTML=t.slice(-80).reverse().map(x=>`<span class="chip">${x.d}</span>`).join("");
-  const cw=t.filter(x=>x.d==="CW").length,cc=t.filter(x=>x.d==="CCW").length;$('cw').textContent=pct(cw,t.length);$('ccw').textContent=pct(cc,t.length);
-  $("tolLabel").textContent=tol;$("tolA").textContent=tol;$("winrate").textContent=pct(bt.hit,bt.n);$("base").textContent=(100*baseline(tol)).toFixed(1)+"%";
-  if(p){
-    const tg=$("target");tg.textContent=p.target==null?"—":p.target;tg.className="target "+(p.target==null?"black":col(p.target));$("prob").textContent=p.target==null?"—":(p.prob*100).toFixed(2)+"%";
-    const sm=p.signal==="HIGH"?"SEÑAL FUERTE":p.signal==="LOW"?"SEÑAL DÉBIL":"SIN EDGE";$('signal').textContent=sm;$('signal').className="signal "+(p.signal==='HIGH'?'high':p.signal==='LOW'?'low':'none');
-    const j=p.target==null?null:jmp(h.at(-1),p.target);$("predDir").textContent=p.target==null?"Dirección: —":`Dirección: ${p.predDir} · CW ${(p.cw*100).toFixed(1)}% / CCW ${(p.ccw*100).toFixed(1)}%`;$('predJump').textContent=p.target==null?"Salto previsto: —":`Salto previsto: ${j>=0?'+':''}${j} pockets`;$('zone').textContent=p.target==null?"No hay zona con evidencia suficiente":neigh(p.target,tol).join(" · ");
-    $('confidence').textContent=p.confidence+"/100";$('edge').textContent=(p.edge*100>=0?'+':'')+(p.edge*100).toFixed(1)+" pp";$('support').textContent=p.activeModels+"/"+FAMILIES.length;
-    $('robustEdge').textContent=(p.robustEdge*100>=0?'+':'')+(p.robustEdge*100).toFixed(1)+" pp";
-    $('consensus').textContent=p.consensusCount+"/"+p.activeModels+" modelos ("+Math.round((p.activeModels?p.consensusCount/p.activeModels:0)*100)+"%)";
-    $('stability').textContent=Math.round(p.stability*100)+"/100";
-    const diagParts=FAMILIES.map(f=>{const q=p.adaptive.perf[f];return f+": "+(q.n?q.n+" tests · "+(q.edge*100>=0?'+':'')+(q.edge*100).toFixed(1)+" pp · reciente "+(q.recentEdge*100>=0?'+':'')+(q.recentEdge*100).toFixed(1)+" pp":"sin muestra")}).join(" | ");
-    $('learningSummary').textContent="Robusto "+(p.robustEdge*100>=0?'+':'')+(p.robustEdge*100).toFixed(1)+" pp · consenso "+p.consensusCount+"/"+p.activeModels+" · estabilidad "+Math.round(p.stability*100)+"/100. "+diagParts;
-    $('ranking').innerHTML=p.ranking.slice(0,3).map((x,i)=>`<div class="rank"><div class="ranktop"><span>#${i+1} · ${x.n} ${x.support?`· ${x.support} modelos`:''}</span><b>${(x.p*100).toFixed(2)}%</b></div><div class="bar"><i style="width:${Math.max(2,100*x.p/p.ranking[0].p)}%"></i></div></div>`).join('');
-    $('alerts').innerHTML=[...p.seq,...p.joint,...p.jumps].slice(0,7).map(q=>`<div class="alert"><b>${q.type==='sequence'?'SECUENCIA':q.type==='joint'?'SALTO + DIRECCIÓN':'PATRÓN DE SALTOS'}</b><br>${esc(q.key).replaceAll(',',' → ')} · ${q.occ} coincidencias · siguientes: ${q.next.join(', ')}</div>`).join('')||'<span class="muted">No hay patrón repetido suficiente.</span>';
-    $('weights').innerHTML=FAMILIES.map(k=>{const v=p.adaptive.weights[k],q=p.adaptive.perf[k];return `<div class="weight"><span class="muted">${k}</span><br><b>${v.toFixed(2)}×</b><div class="muted">${q.n} tests · ±${tol}: ${pct(q.hit,q.n)} · edge ${q.n?(q.edge*100).toFixed(1):'—'} pp · reciente ${q.n?(q.recentEdge*100).toFixed(1):'—'} pp · robusto ${q.n?(q.robustEdge*100).toFixed(1):'—'} pp</div></div>`}).join('');
-    $('weightSummary').textContent="Los pesos usan únicamente información disponible antes de cada spin evaluado; no se consultan predicciones futuras ni el log completo durante el backtest.";
-  }else{
-    $("target").textContent="—";$("target").className="target black";$("prob").textContent="—";$('signal').textContent=h.length<12?'ESPERANDO DATOS':'SIN SEÑAL';$('signal').className='signal';$('predDir').textContent='Dirección: —';$('predJump').textContent='Salto previsto: —';$('zone').textContent=h.length<12?'Se necesitan al menos 12 spins':'—';$('confidence').textContent='—';$('edge').textContent='—';$('support').textContent='—';$('robustEdge').textContent='—';$('consensus').textContent='—';$('stability').textContent='—';$('learningSummary').textContent='';$('ranking').innerHTML='';$('alerts').innerHTML=h.length<12?'Se necesitan al menos 12 spins.':'—';$('weights').innerHTML=FAMILIES.map(k=>`<div class="weight"><span class="muted">${k}</span><br><b>—</b><div class="muted">Sin muestra</div></div>`).join('');$('weightSummary').textContent='';
-  }
-  const mem=patternMemory(h);$('library').innerHTML=Object.values(mem).sort((a,b)=>b.occ-a.occ).slice(0,40).map(v=>`<div class="prow" style="grid-template-columns:1fr"><span><b>${esc(v.type)}|${esc(v.key)}</b> · ${v.occ} coincidencias · ${Object.entries(v.next).sort((a,b)=>b[1]-a[1]).map(x=>x[0]+"("+x[1]+")").join(', ')}</span></div>`).join('')||'—';
-  const chartRows=(S.predictions||[]).filter(x=>x.prediction&&x.prediction.target!=null&&x.spinIndex<=h.length);
-  const chartN=Math.min(Number(S.settings.chartWindow),chartRows.length);
-  const chartSlice=chartRows.slice(-chartN);
-  const chartHits=chartSlice.filter(x=>dist(x.prediction.target,x.actual)<=tol).length;
-  const chartRate=chartSlice.length?100*chartHits/chartSlice.length:null;
-  const chartBase=100*baseline(tol);
-  $('chartRate').textContent=chartRate==null?'—':chartRate.toFixed(1)+'%';
-  $('chartBase').textContent=chartBase.toFixed(1)+'%';
-  $('chartEdge').textContent=chartRate==null?'—':(chartRate-chartBase>=0?'+':'')+(chartRate-chartBase).toFixed(1)+' pp';
-  $('chartEval').textContent=chartSlice.length;
-
-  $('predHistory').innerHTML=S.predictions.slice(-60).reverse().map(x=>{
-    const p=x.prediction;
-    const hasPrediction=!!p&&p.target!=null;
-    const w=hasPrediction&&x.actual!=null&&dist(p.target,x.actual)<=tol;
-    const jump=p&&p.jump!=null?p.jump:null;
-    const jumpText=jump==null?'—':`${jump>=0?'+':''}${jump}`;
-    const status=!hasPrediction?'—':(w?'WIN':'LOSS');
-    return `<div class="prow"><b>#${x.spinIndex}</b><span>${hasPrediction?p.target:'—'} → ${x.actual}</span><span>${jumpText} pockets</span><span>${hasPrediction?p.confidence+'/100':'—'}</span><b class="${!hasPrediction?'':(w?'win':'loss')}">${status}</b></div>`;
-  }).join('')||'—';
-  draw(h);
-}
-function draw(h){
-  const c=$("chart"),d=devicePixelRatio||1,w=c.clientWidth||500,hh=c.clientHeight||220;c.width=w*d;c.height=hh*d;const x=c.getContext('2d');x.setTransform(d,0,0,d,0,0);x.clearRect(0,0,w,hh);const tol=S.settings.tol,rows=(S.predictions||[]).filter(x=>x.prediction&&x.prediction.target!=null&&x.spinIndex<=h.length).map(x=>({hit:dist(x.prediction.target,x.actual)<=tol})),window=Number(S.settings.chartWindow),vals=rows.slice(-window).map((r,i,arr)=>{const upto=rows.slice(0,rows.length-arr.length+i+1);return upto.length?100*upto.filter(z=>z.hit).length/upto.length:0});if(!vals.length){x.fillStyle=getComputedStyle(document.body).getPropertyValue('--muted');x.font='12px system-ui';x.fillText('Aún no hay suficientes predicciones evaluadas.',12,25);return}const color=getComputedStyle(document.body).getPropertyValue('--accent');x.strokeStyle=color;x.lineWidth=2;x.beginPath();vals.forEach((y,i,a)=>{const xx=8+i*(w-16)/Math.max(1,a.length-1),yy=hh-12-y*(hh-24)/100;i?x.lineTo(xx,yy):x.moveTo(xx,yy)});x.stroke();
-  x.strokeStyle=getComputedStyle(document.body).getPropertyValue('--muted');x.lineWidth=1;x.setLineDash([4,4]);const by=hh-12-100*baseline(tol)*(hh-24)/100;x.beginPath();x.moveTo(8,by);x.lineTo(w-8,by);x.stroke();x.setLineDash([]);
-}
-$("theme").onclick=()=>{document.body.classList.toggle('night');const n=document.body.classList.contains('night');localStorage.setItem('roulettePatternLab.theme',n?'night':'day');$("theme").textContent=n?'Modo día':'Modo noche';draw(S.spins.map(x=>Number(x.result)))};
-$("undo").onclick=undo;$("clear").onclick=clearAll;
-$("tol").value=String(S.settings.tol);$("chartWindow").value=String(S.settings.chartWindow);
-$("tol").onchange=()=>{S.settings.tol=Number($("tol").value);cache.clear();rebuildPredictions();save();render()};
-$("chartWindow").onchange=()=>{S.settings.chartWindow=Number($("chartWindow").value);save();draw(S.spins.map(x=>Number(x.result)))};
-$("txt").onclick=()=>{const h=S.spins.map(x=>Number(x.result)),l=["ROULETTE PATTERN LAB v13.6","SPIN | RESULT | JUMP | DIRECTION | DATE"];S.spins.forEach((s,i)=>{const p=i?h[i-1]:null;l.push((i+1)+" | "+s.result+" | "+(p==null?"":jmp(p,s.result))+" | "+(p==null?"":dir(p,s.result))+" | "+s.createdAt)});download("roulette-history-v13.6.txt",l.join("\n"),"text/plain")};
-$("json").onclick=()=>download("roulette-pattern-lab-v13.6.json",JSON.stringify(S,null,2),"application/json");
-$("restoreBtn").onclick=()=>$("restore").click();$("restore").onchange=e=>{const f=e.target.files[0];if(!f)return;f.text().then(t=>{const x=JSON.parse(t);if(!Array.isArray(x.spins))throw Error('Backup inválido');S=normalize(x);cache.clear();rebuildPredictions();save();$("tol").value=String(S.settings.tol);$("chartWindow").value=String(S.settings.chartWindow);render()}).catch(e=>alert(e.message))};
-function download(name,data,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
-load();
-if(localStorage.getItem('roulettePatternLab.theme')==='night'){$("theme").click()}
-for(let n=0;n<=36;n++){const b=document.createElement('button');b.className='num '+col(n);b.textContent=n;b.onpointerdown=()=>{b.classList.add('pressed');setTimeout(()=>b.classList.remove('pressed'),120)};b.onclick=()=>add(n);$("numbers").appendChild(b)}
-render();
-})();
-</script>
+<script src="js/app.js"></script>
 </body>
 </html>
