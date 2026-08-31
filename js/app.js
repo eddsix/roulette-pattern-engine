@@ -1,7 +1,7 @@
 
 (()=>{
 'use strict';
-const VERSION='14.0', KEY='roulettePatternLab.v14', THEME_KEY='roulettePatternLab.theme';
+const VERSION='14.1', KEY='roulettePatternLab.v14.1', THEME_KEY='roulettePatternLab.theme';
 const FAMILIES=['sequence','jump','joint','pair','transition'];
 const CACHE_LIMIT=80;
 const $=id=>document.getElementById(id);
@@ -41,26 +41,26 @@ function robustEdgeWilson(hit,n,tol){
   return center-half-baseline(tol);
 }
 function getTrans(h){const k=keyArr(h);if(cache.trans.has(k))return cache.trans.get(k);const a=[];for(let i=1;i<h.length;i++)a.push({from:h[i-1],to:h[i],j:jmp(h[i-1],h[i]),d:dir(h[i-1],h[i])});cache.trans.set(k,a);return a}
-function candidates(h,f){
-  const key=hashHistory(h,0)+'|'+f;if(cache.candidates.has(key))return cache.candidates.get(key);
+function candidates(h,f,minOcc=2){
+  const key=hashHistory(h,0)+'|'+f+'|'+minOcc;if(cache.candidates.has(key))return cache.candidates.get(key);
   if(h.length<12){cache.candidates.set(key,[]);return []}
   const out=[];
   if(f==='sequence'){
-    for(let l=2;l<=Math.min(8,h.length-1);l++){const sig=h.slice(-l).join(',');const next=[];for(let i=0;i+l<h.length;i++){if(h.slice(i,i+l).join(',')===sig)next.push(h[i+l])}if(next.length>=2)out.push({type:f,len:l,key:sig,occ:next.length,next})}
+    for(let l=2;l<=Math.min(8,h.length-1);l++){const sig=h.slice(-l).join(',');const next=[];for(let i=0;i+l<h.length;i++){if(h.slice(i,i+l).join(',')===sig)next.push(h[i+l])}if(next.length>=minOcc)out.push({type:f,len:l,key:sig,occ:next.length,next})}
   }else if(f==='jump'){
-    const a=getTrans(h).map(x=>x.j);for(let l=2;l<=Math.min(6,a.length-1);l++){const sig=a.slice(-l).join(',');const next=[];for(let i=0;i+l<a.length;i++){if(a.slice(i,i+l).join(',')===sig)next.push(a[i+l])}if(next.length>=2)out.push({type:f,len:l,key:sig,occ:next.length,next})}
+    const a=getTrans(h).map(x=>x.j);for(let l=2;l<=Math.min(6,a.length-1);l++){const sig=a.slice(-l).join(',');const next=[];for(let i=0;i+l<a.length;i++){if(a.slice(i,i+l).join(',')===sig)next.push(a[i+l])}if(next.length>=minOcc)out.push({type:f,len:l,key:sig,occ:next.length,next})}
   }else if(f==='joint'){
-    const a=getTrans(h).map(x=>x.j+':'+x.d);for(let l=2;l<=Math.min(6,a.length-1);l++){const sig=a.slice(-l).join('|');const next=[];for(let i=0;i+l<a.length;i++){if(a.slice(i,i+l).join('|')===sig)next.push(h[i+l])}if(next.length>=2)out.push({type:f,len:l,key:sig,occ:next.length,next})}
+    const a=getTrans(h).map(x=>x.j+':'+x.d);for(let l=2;l<=Math.min(6,a.length-1);l++){const sig=a.slice(-l).join('|');const next=[];for(let i=0;i+l<a.length;i++){if(a.slice(i,i+l).join('|')===sig)next.push(h[i+l])}if(next.length>=minOcc)out.push({type:f,len:l,key:sig,occ:next.length,next})}
   }else if(f==='pair'){
-    const sig=h.slice(-2).join(','),next=[];for(let i=0;i+2<h.length;i++)if(h[i]+','+h[i+1]===sig)next.push(h[i+2]);if(next.length>=2)out.push({type:f,len:2,key:sig,occ:next.length,next});
+    const sig=h.slice(-2).join(','),next=[];for(let i=0;i+2<h.length;i++)if(h[i]+','+h[i+1]===sig)next.push(h[i+2]);if(next.length>=minOcc)out.push({type:f,len:2,key:sig,occ:next.length,next});
   }else{
-    const sig=String(h.at(-1)),next=[];for(let i=0;i<h.length-1;i++)if(h[i]===h.at(-1))next.push(h[i+1]);if(next.length>=2)out.push({type:f,len:1,key:sig,occ:next.length,next});
+    const sig=String(h.at(-1)),next=[];for(let i=0;i<h.length-1;i++)if(h[i]===h.at(-1))next.push(h[i+1]);if(next.length>=minOcc)out.push({type:f,len:1,key:sig,occ:next.length,next});
   }
   const r=out.sort((a,b)=>b.len-a.len||b.occ-a.occ);cache.candidates.set(key,r);return r;
 }
-function weightedFamilyTarget(h,f){
-  const key=hashHistory(h,0)+'|'+f;if(cache.familyTarget.has(key))return cache.familyTarget.get(key);
-  const cs=candidates(h,f);if(!cs.length){cache.familyTarget.set(key,null);return null}
+function weightedFamilyTarget(h,f,minOcc=2){
+  const key=hashHistory(h,0)+'|'+f+'|'+minOcc;if(cache.familyTarget.has(key))return cache.familyTarget.get(key);
+  const cs=candidates(h,f,minOcc);if(!cs.length){cache.familyTarget.set(key,null);return null}
   const q=Array(37).fill(0);
   cs.slice(0,5).forEach(p=>{const reliability=clamp(0.58+0.05*Math.min(p.occ,10)+0.045*Math.min(p.len,8),0.58,1.25);const uniq=new Set(p.next);uniq.forEach(n=>q[idx(n)]+=reliability/Math.max(1,uniq.size))});
   let best=0;for(let n=1;n<37;n++)if(q[n]>q[best])best=n;const ans=q[best]?best:null;cache.familyTarget.set(key,ans);return ans;
@@ -69,7 +69,7 @@ function familyBacktest(h,f,tol){
   const key=hashHistory(h,tol)+'|'+f;if(cache.familyBacktest.has(key))return cache.familyBacktest.get(key);
   if(h.length<14){const z=emptyPerf();cache.familyBacktest.set(key,z);return z}
   const start=Math.max(12,h.length-160),rows=[];
-  for(let i=start;i<h.length;i++){const t=weightedFamilyTarget(h.slice(0,i),f);if(t==null)continue;rows.push({hit:dist(t,h[i])<=tol,exact:dist(t,h[i])===0})}
+  for(let i=start;i<h.length;i++){const t=weightedFamilyTarget(h.slice(0,i),f,1);if(t==null)continue;rows.push({hit:dist(t,h[i])<=tol,exact:dist(t,h[i])===0})}
   if(!rows.length){const z=emptyPerf();cache.familyBacktest.set(key,z);return z}
   const n=rows.length,hit=rows.filter(x=>x.hit).length,exact=rows.filter(x=>x.exact).length,recent=rows.slice(-Math.min(20,n)),rh=recent.filter(x=>x.hit).length;
   const edge=hit/n-baseline(tol),recentEdge=rh/recent.length-baseline(tol),robust=robustEdgeWilson(hit,n,tol),mid=Math.max(10,Math.floor(n/2)),a=rows.slice(0,mid),b=rows.slice(mid),ra=a.length?a.filter(x=>x.hit).length/a.length:0,rb=b.length?b.filter(x=>x.hit).length/b.length:0;
@@ -148,7 +148,7 @@ function render(){
   $('weights').innerHTML=FAMILIES.map(k=>{const v=p.adaptive.weights[k],q=p.adaptive.perf[k];return `<div class="weight"><span class="muted">${k}</span><br><b>${v.toFixed(2)}×</b><div class="muted">${q.n} tests · ±${tol}: ${pct(q.hit,q.n)} · edge ${q.n?fmtPP(q.edge):'—'} · reciente ${q.n?fmtPP(q.recentEdge):'—'} · robusto ${q.n?fmtPP(q.robustEdge):'—'}</div></div>`}).join('');
   $('weightSummary').textContent='Los pesos se calculan únicamente con resultados disponibles antes de cada evaluación. Las predicciones históricas no se recalculan al añadir spins nuevos.';
   $('learningSummary').textContent=FAMILIES.map(f=>{const q=p.adaptive.perf[f];return q.n?`${f}: ${q.n} tests, ${fmtPP(q.edge)} histórico, ${fmtPP(q.recentEdge)} reciente, ${Math.round(q.stability*100)}/100 estabilidad`:`${f}: sin muestra`}).join(' · ');
-  $('predHistory').innerHTML=bt.rows.slice(-60).reverse().map(x=>{const pr=x.prediction,win=dist(pr.target,x.actual)<=tol,j=pr.jump==null?'—':`${pr.jump>=0?'+':''}${pr.jump}`;return `<div class="prow"><b>#${x.spinIndex}</b><span>${pr.target} → ${x.actual}</span><span>${j} pockets</span><span>${pr.confidence}/100</span><b class="${win?'win':'loss'}">${win?'WIN':'LOSS'}</b></div>`}).join('')||'—';
+  $('predHistory').innerHTML=bt.rows.slice(-60).reverse().map(x=>{const pr=x.prediction,win=dist(pr.target,x.actual)<=tol,j=pr.jump==null?'—':`${pr.jump>=0?'+':''}${pr.jump}`;return `<div class="prow"><b>#${x.spinIndex}</b><span>${pr.target} → ${x.actual}</span><span>${j} pockets</span><span>${(pr.prob*100).toFixed(2)}%</span><span>${pr.confidence}/100</span><b class="${win?'win':'loss'}">${win?'WIN':'LOSS'}</b></div>`}).join('')||'—';
   const base=100*baseline(tol), recentRows=bt.rows.slice(-20),recentRate=recentRows.length?100*recentRows.filter(x=>dist(x.prediction.target,x.actual)<=tol).length/recentRows.length:null,chartRows=bt.rows.slice(-Number(S.settings.chartWindow)),chartRate=chartRows.length?100*chartRows.filter(x=>dist(x.prediction.target,x.actual)<=tol).length/chartRows.length:null;
   $('chartRate').textContent=chartRate==null?'—':chartRate.toFixed(1)+'%';$('chartBase').textContent=base.toFixed(1)+'%';$('chartEdge').textContent=chartRate==null?'—':((chartRate-base>=0?'+':'')+(chartRate-base).toFixed(1)+' pp');$('chartEval').textContent=chartRows.length;$('chartRecent').textContent=recentRate==null?'—':recentRate.toFixed(1)+'%';
   drawChart();
