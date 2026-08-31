@@ -1,7 +1,7 @@
 
 (()=>{
 'use strict';
-const VERSION='14.2', KEY='roulettePatternLab.v14.2', THEME_KEY='roulettePatternLab.theme';
+const VERSION='14.4', KEY='roulettePatternLab.v14.4', THEME_KEY='roulettePatternLab.theme';
 const FAMILIES=['sequence','jump','joint','pair','transition'];
 const CACHE_LIMIT=80;
 const $=id=>document.getElementById(id);
@@ -97,25 +97,54 @@ function metaBacktest(h,tol){
   const out={};Object.entries(combos).forEach(([k,v])=>out[k]={...v,edge:v.hit/v.n-baseline(tol),robustEdge:robustEdgeWilson(v.hit,v.n,tol)});cache.meta.set(key,out);return out;
 }
 function adaptive(h,tol){
-  const perf={},weights={};FAMILIES.forEach(f=>{const p=familyBacktest(h,f,tol);perf[f]=p;const sample=clamp(p.n/70,0,1),robustBoost=clamp(1+p.robustEdge*7,0.45,1.65),recency=clamp(1+p.recentEdge*4,0.65,1.35),stability=0.78+0.22*p.stability;weights[f]=clamp(0.55+0.90*sample*robustBoost*recency*stability,0.45,2.0)});return {perf,weights,meta:metaBacktest(h,tol)};
+  const perf={},weights={};
+  FAMILIES.forEach(f=>perf[f]=familyBacktest(h,f,tol));
+  // Adaptive weight = performance quality + evidence strength.
+  // Small samples can influence learning immediately, but their influence is
+  // naturally damped by the uncertainty-aware robust edge and sample factor.
+  const scores=FAMILIES.filter(f=>perf[f].n>0).map(f=>{
+    const p=perf[f],n=p.n;
+    const sample=clamp(Math.sqrt(n/(n+12)),0,1);
+    const quality=p.robustEdge*0.55+p.recentEdge*0.20+p.edge*0.15+(p.stability-0.5)*0.10;
+    return {f,score:quality*sample};
+  });
+  FAMILIES.forEach(f=>{
+    const p=perf[f],r=scores.find(x=>x.f===f);
+    if(!r){weights[f]=0.55;return}
+    // A family only receives a meaningful boost when its evidence is positive.
+    // Negative evidence can reduce its weight, but never below the base floor.
+    const delta=clamp(r.score*7,-0.18,0.85);
+    weights[f]=clamp(0.55+delta,0.55,1.40);
+  });
+  return {perf,weights,meta:metaBacktest(h,tol)};
 }
 function calibrateRelative(scores){
   const floor=0.015,temps=scores.map(v=>Math.sqrt(Math.max(v,0)));const sum=temps.reduce((a,b)=>a+b,0)||1;return temps.map(v=>Math.max(floor,v/sum));
 }
 function model(h,tol){
   const key=hashHistory(h,tol);if(cache.model.has(key))return cache.model.get(key);if(h.length<12)return null;
-  const a=adaptive(h,tol),score=Array(37).fill(0.018),support=Array(37).fill(0),familyTargets={};
-  for(const f of FAMILIES){const w=a.weights[f],cs=candidates(h,f),ft=weightedFamilyTarget(h,f);familyTargets[f]=ft;cs.slice(0,5).forEach(q=>{const lenBoost=q.len>=6?1.25:q.len>=4?1.12:1,occBoost=clamp(Math.log2(q.occ+1)/2,0.5,1.35),sampleConfidence=clamp(q.occ/7,0.35,1),localW=w*lenBoost*occBoost*sampleConfidence,uniq=[...new Set(q.next)];uniq.forEach(n=>{score[idx(n)]+=localW/Math.max(1,uniq.length);support[idx(n)]++})})}
+  const a=adaptive(h,tol),familyScores={},familyTargets={};
+  for(const f of FAMILIES){
+    const cs=candidates(h,f),scores=Array(37).fill(0);
+    cs.slice(0,5).forEach(q=>{
+      const lenBoost=q.len>=6?1.25:q.len>=4?1.12:1,occBoost=clamp(Math.log2(q.occ+1)/2,0.5,1.35),sampleConfidence=clamp(q.occ/7,0.35,1),localW=lenBoost*occBoost*sampleConfidence,uniq=[...new Set(q.next)];
+      uniq.forEach(n=>{scores[idx(n)]+=localW/Math.max(1,uniq.length)});
+    });
+    const total=scores.reduce((x,y)=>x+y,0);
+    familyScores[f]=total?scores.map(x=>x/total):Array(37).fill(0);
+    familyTargets[f]=total?familyScores[f].reduce((bi,v,i)=>v>familyScores[f][bi]?i:bi,0):null;
+  }
+  const score=Array(37).fill(0.0001),support=Array(37).fill(0);
+  for(const f of FAMILIES){const w=a.weights[f],distF=familyScores[f],has=distF.some(x=>x>0);if(!has)continue;for(let n=0;n<37;n++){score[n]+=w*distF[n];if(distF[n]>0)support[n]+=w}}
   Object.entries(a.meta).forEach(([k,m])=>{if(m.n<6||m.robustEdge<=0)return;const [fa,fb]=k.split('+'),t=familyTargets[fa];if(t!=null&&familyTargets[fb]===t){score[idx(t)]+=clamp(m.robustEdge*16,0.03,0.55);support[idx(t)]+=0.5}});
-  const last=h.at(-1),row=Array(37).fill(0);for(let i=0;i<h.length-1;i++)if(h[i]===last)row[idx(h[i+1])]++;const rz=row.reduce((a,b)=>a+b,0);if(rz)for(let n=0;n<37;n++)if(row[n])score[n]+=0.95*(row[n]/rz);
   const recent=h.slice(-10),cnt=new Map();recent.forEach(n=>cnt.set(n,(cnt.get(n)||0)+1));for(let n=0;n<37;n++){const c=cnt.get(n)||0;if(c>=3)score[n]*=(c===3?0.90:c===4?0.82:0.72)}
-  const probs=calibrateRelative(score),ranked=score.map((v,n)=>({n,v,p:probs[n],support:support[n],transition:row[n]})).sort((a,b)=>b.p-a.p||b.support-a.support||b.transition-a.transition),top=ranked[0],second=ranked[1],lead=top.p-second.p;
-  let cw=0,ccw=0;for(const x of ranked){const j=jmp(last,x.n);if(j>0)cw+=x.p;else if(j<0)ccw+=x.p}const active=FAMILIES.filter(f=>a.perf[f].n>0).length;
+  const probs=calibrateRelative(score),ranked=score.map((v,n)=>({n,v,p:probs[n],support:support[n]})).sort((a,b)=>b.p-a.p||b.support-a.support),top=ranked[0],second=ranked[1],lead=top.p-second.p;
+  let cw=0,ccw=0;const last=h.at(-1);for(const x of ranked){const j=jmp(last,x.n);if(j>0)cw+=x.p;else if(j<0)ccw+=x.p}const active=FAMILIES.filter(f=>a.perf[f].n>0).length;
   const familyRobust=FAMILIES.map(f=>a.perf[f].n?a.perf[f].robustEdge:0).filter(x=>Number.isFinite(x)),avgRobust=familyRobust.length?familyRobust.reduce((s,x)=>s+x,0)/familyRobust.length:0;
   const familyRecent=FAMILIES.map(f=>a.perf[f].n?a.perf[f].recentEdge:0).filter(x=>Number.isFinite(x)),avgRecent=familyRecent.length?familyRecent.reduce((s,x)=>s+x,0)/familyRecent.length:0;
   const edge=top.p-baseline(tol),robustEdge=avgRobust,consensusCount=FAMILIES.filter(f=>a.perf[f].n&&familyTargets[f]===top.n).length,consensus=active?consensusCount/active:0;
   const stability=clamp(0.55*clamp(1-Math.abs(avgRobust-avgRecent)/Math.max(0.05,Math.abs(avgRobust)+0.02),0,1)+0.45*(FAMILIES.reduce((s,f)=>s+(a.perf[f].n?a.perf[f].stability:0),0)/Math.max(1,active)),0,1);
-  const recentQuality=clamp((avgRecent+baseline(tol))/(Math.max(0.001,1-baseline(tol))),0,1),sampleQuality=clamp((a.perf[topSupportFamily(ranked, a, familyTargets, top.n)]?.n||0)/100,0,1);
+  const recentQuality=clamp((avgRecent+baseline(tol))/(Math.max(0.001,1-baseline(tol))),0,1),sampleQuality=clamp((a.perf[topSupportFamily(ranked,a,familyTargets,top.n)]?.n||0)/100,0,1);
   const confidence=Math.round(clamp(28+lead*1000+clamp(top.support/Math.max(1,active),0,1)*22+consensus*25+stability*12+clamp(avgRobust*400,-8,20),5,99));
   const quality=Math.round(clamp(consensus*28+stability*22+clamp((robustEdge+0.03)/0.08,0,1)*25+clamp((Math.log1p(Math.max(0,top.support))/3),0,1)*10+recentQuality*15,0,100));
   const signal=!ranked.length||active<2||confidence<45||edge<0.003||robustEdge<=0?'NONE':confidence>=72&&robustEdge>=0.008&&quality>=70?'HIGH':'LOW';
@@ -123,6 +152,7 @@ function model(h,tol){
   const result={target,prob:target==null?0:top.p,ranking:ranked.slice(0,12),predDir:cw>=ccw?'CW':'CCW',cw,ccw,adaptive:a,seq:candidates(h,'sequence').slice(0,4),joint:candidates(h,'joint').slice(0,3),jumps:candidates(h,'jump').slice(0,3),edge,robustEdge,confidence,signal,lead,avgEdge:avgRobust,avgRecent,stability,consensusCount,activeModels:active,jump,quality,familyTargets};
   cache.model.set(key,result);if(cache.model.size>CACHE_LIMIT)cache.model.delete(cache.model.keys().next().value);return result;
 }
+
 function topSupportFamily(ranked,a,targets,n){let best=FAMILIES[0],bn=-1;for(const f of FAMILIES){const q=a.perf[f];if(targets[f]===n&&(q.n>bn)){best=f;bn=q.n}}return best}
 function rebuildPredictions(){
   const h=S.spins.map(x=>x.result),out=[];for(let i=0;i<h.length;i++){const prior=h.slice(0,i);if(prior.length<12)continue;const p=model(prior,S.settings.tol);if(p)out.push({id:out.length+1,spinIndex:i+1,previous:prior.at(-1)??null,prediction:p,actual:h[i],createdAt:S.spins[i].createdAt||new Date().toISOString()})}S.predictions=out;
