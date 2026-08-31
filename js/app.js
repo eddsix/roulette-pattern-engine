@@ -1,7 +1,7 @@
 
 (()=>{
 'use strict';
-const VERSION='14.1', KEY='roulettePatternLab.v14.1', THEME_KEY='roulettePatternLab.theme';
+const VERSION='14.2', KEY='roulettePatternLab.v14.2', THEME_KEY='roulettePatternLab.theme';
 const FAMILIES=['sequence','jump','joint','pair','transition'];
 const CACHE_LIMIT=80;
 const $=id=>document.getElementById(id);
@@ -65,11 +65,23 @@ function weightedFamilyTarget(h,f,minOcc=2){
   cs.slice(0,5).forEach(p=>{const reliability=clamp(0.58+0.05*Math.min(p.occ,10)+0.045*Math.min(p.len,8),0.58,1.25);const uniq=new Set(p.next);uniq.forEach(n=>q[idx(n)]+=reliability/Math.max(1,uniq.size))});
   let best=0;for(let n=1;n<37;n++)if(q[n]>q[best])best=n;const ans=q[best]?best:null;cache.familyTarget.set(key,ans);return ans;
 }
+function learningTarget(h,f){
+  // Walk-forward learning may use a shorter pattern when the longest/current
+  // pattern has no historical repetition. This affects learning evaluation
+  // only; prediction candidates keep their existing evidence requirements.
+  const max=f==='pair'?2:(f==='transition'?1:(f==='sequence'?8:6));
+  const min=f==='pair'?2:1;
+  for(let l=max;l>=min;l--){
+    const t=weightedFamilyTarget(h,f,l);
+    if(t!=null)return t;
+  }
+  return null;
+}
 function familyBacktest(h,f,tol){
   const key=hashHistory(h,tol)+'|'+f;if(cache.familyBacktest.has(key))return cache.familyBacktest.get(key);
   if(h.length<14){const z=emptyPerf();cache.familyBacktest.set(key,z);return z}
   const start=Math.max(12,h.length-160),rows=[];
-  for(let i=start;i<h.length;i++){const t=weightedFamilyTarget(h.slice(0,i),f,1);if(t==null)continue;rows.push({hit:dist(t,h[i])<=tol,exact:dist(t,h[i])===0})}
+  for(let i=start;i<h.length;i++){const t=learningTarget(h.slice(0,i),f);if(t==null)continue;rows.push({hit:dist(t,h[i])<=tol,exact:dist(t,h[i])===0})}
   if(!rows.length){const z=emptyPerf();cache.familyBacktest.set(key,z);return z}
   const n=rows.length,hit=rows.filter(x=>x.hit).length,exact=rows.filter(x=>x.exact).length,recent=rows.slice(-Math.min(20,n)),rh=recent.filter(x=>x.hit).length;
   const edge=hit/n-baseline(tol),recentEdge=rh/recent.length-baseline(tol),robust=robustEdgeWilson(hit,n,tol),mid=Math.max(10,Math.floor(n/2)),a=rows.slice(0,mid),b=rows.slice(mid),ra=a.length?a.filter(x=>x.hit).length/a.length:0,rb=b.length?b.filter(x=>x.hit).length/b.length:0;
@@ -116,7 +128,7 @@ function rebuildPredictions(){
   const h=S.spins.map(x=>x.result),out=[];for(let i=0;i<h.length;i++){const prior=h.slice(0,i);if(prior.length<12)continue;const p=model(prior,S.settings.tol);if(p)out.push({id:out.length+1,spinIndex:i+1,previous:prior.at(-1)??null,prediction:p,actual:h[i],createdAt:S.spins[i].createdAt||new Date().toISOString()})}S.predictions=out;
 }
 function ensurePredictions(){
-  const expected=Math.max(0,S.spins.length-12),last=S.predictions.at(-1)?.spinIndex||0;if(S.predictions.length!==expected||last!==S.spins.length){rebuildPredictions();save()}
+  const expected=Math.max(0,S.spins.length-12),last=S.predictions.at(-1)?.spinIndex||0,valid=S.predictions.length===expected&&last===S.spins.length&&S.predictions.every(x=>Number.isFinite(x?.prediction?.prob)&&x?.prediction?.target!=null);if(!valid){rebuildPredictions();save()}
 }
 function backtest(tol){ensurePredictions();const rows=S.predictions.filter(x=>x?.prediction?.target!=null&&x.spinIndex<=S.spins.length),n=rows.length,hit=rows.filter(x=>dist(x.prediction.target,x.actual)<=tol).length,exact=rows.filter(x=>dist(x.prediction.target,x.actual)===0).length,dirHit=rows.filter(x=>x.prediction.predDir&&x.previous!=null&&x.prediction.predDir===dir(x.previous,x.actual)).length;return {n,hit,exact,dir:dirHit,rows}}
 function patternMemory(h){const key=hashHistory(h,0);if(cache.memory.has(key))return cache.memory.get(key);const mem={};FAMILIES.forEach(f=>candidates(h,f).forEach(q=>{const k=q.type+'|'+q.key;if(!mem[k])mem[k]={type:q.type,key:q.key,occ:q.occ,next:{}};mem[k].occ=Math.max(mem[k].occ,q.occ);q.next.forEach(n=>mem[k].next[n]=(mem[k].next[n]||0)+1)}));const out=Object.values(mem);cache.memory.set(key,out);return out}
