@@ -1,7 +1,7 @@
 
 (()=>{
 'use strict';
-const VERSION='14.5', KEY='roulettePatternLab.v14.5', THEME_KEY='roulettePatternLab.theme';
+const VERSION='14.6', KEY='roulettePatternLab.v14.6', THEME_KEY='roulettePatternLab.theme';
 const FAMILIES=['sequence','jump','joint','pair','transition'];
 const CACHE_LIMIT=80;
 const $=id=>document.getElementById(id);
@@ -99,22 +99,34 @@ function metaBacktest(h,tol){
 function adaptive(h,tol){
   const perf={},weights={};
   FAMILIES.forEach(f=>perf[f]=familyBacktest(h,f,tol));
-  // Adaptive weight = performance quality + evidence strength.
-  // Small samples can influence learning immediately, but their influence is
-  // naturally damped by the uncertainty-aware robust edge and sample factor.
-  const scores=FAMILIES.filter(f=>perf[f].n>0).map(f=>{
-    const p=perf[f],n=p.n;
+
+  // Adaptive weight = current performance quality + evidence strength,
+  // smoothed through the family's own previous walk-forward states. This
+  // prevents a family from jumping from a strong weight straight to the
+  // 0.55 floor because of a short-term change in the latest backtest.
+  const rawWeight=(p)=>{
+    if(!p||!p.n)return 0.55;
+    const n=p.n;
     const sample=clamp(Math.sqrt(n/(n+12)),0,1);
     const quality=p.robustEdge*0.55+p.recentEdge*0.20+p.edge*0.15+(p.stability-0.5)*0.10;
-    return {f,score:quality*sample};
-  });
+    const score=quality*sample;
+    const delta=clamp(score*7,-0.18,0.85);
+    return clamp(0.55+delta,0.55,1.40);
+  };
+
+  // Reconstruct the weight trajectory walk-forward, so the current weight
+  // retains controlled continuity without using any future observations.
+  const start=Math.max(14,h.length-160), alpha=0.22;
   FAMILIES.forEach(f=>{
-    const p=perf[f],r=scores.find(x=>x.f===f);
-    if(!r){weights[f]=0.55;return}
-    // A family only receives a meaningful boost when its evidence is positive.
-    // Negative evidence can reduce its weight, but never below the base floor.
-    const delta=clamp(r.score*7,-0.18,0.85);
-    weights[f]=clamp(0.55+delta,0.55,1.40);
+    let w=0.55,seen=false;
+    for(let i=start;i<h.length;i++){
+      const p=familyBacktest(h.slice(0,i),f,tol);
+      if(!p.n)continue;
+      const target=rawWeight(p);
+      w=seen?(w*(1-alpha)+target*alpha):target;
+      seen=true;
+    }
+    weights[f]=clamp(seen?w:0.55,0.55,1.40);
   });
   return {perf,weights,meta:metaBacktest(h,tol)};
 }
