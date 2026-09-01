@@ -1,7 +1,7 @@
 
 (()=>{
 'use strict';
-const VERSION='14.4', KEY='roulettePatternLab.v14.4', THEME_KEY='roulettePatternLab.theme';
+const VERSION='14.5', KEY='roulettePatternLab.v14.5', THEME_KEY='roulettePatternLab.theme';
 const FAMILIES=['sequence','jump','joint','pair','transition'];
 const CACHE_LIMIT=80;
 const $=id=>document.getElementById(id);
@@ -70,7 +70,7 @@ function learningTarget(h,f){
   // pattern has no historical repetition. This affects learning evaluation
   // only; prediction candidates keep their existing evidence requirements.
   const max=f==='pair'?2:(f==='transition'?1:(f==='sequence'?8:6));
-  const min=f==='pair'?2:1;
+  const min=f==='pair'?1:1;
   for(let l=max;l>=min;l--){
     const t=weightedFamilyTarget(h,f,l);
     if(t!=null)return t;
