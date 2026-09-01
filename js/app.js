@@ -1,7 +1,7 @@
 
 (()=>{
 'use strict';
-const VERSION='14.6', KEY='roulettePatternLab.v14.6', THEME_KEY='roulettePatternLab.theme';
+const VERSION='14.7', KEY='roulettePatternLab.v14.7', THEME_KEY='roulettePatternLab.theme';
 const FAMILIES=['sequence','jump','joint','pair','transition'];
 const CACHE_LIMIT=80;
 const $=id=>document.getElementById(id);
@@ -137,9 +137,13 @@ function model(h,tol){
   const key=hashHistory(h,tol);if(cache.model.has(key))return cache.model.get(key);if(h.length<12)return null;
   const a=adaptive(h,tol),familyScores={},familyTargets={};
   for(const f of FAMILIES){
-    const cs=candidates(h,f),scores=Array(37).fill(0);
+    // Prediction-only fallback: keep the normal evidence threshold first.
+    // If the current exact pattern has no qualifying repetition, use the
+    // same family's weaker single-occurrence evidence instead of leaving the
+    // family completely silent. This does not change walk-forward learning.
+    const strict=candidates(h,f), fallback=!strict.length, cs=fallback?candidates(h,f,1):strict, scores=Array(37).fill(0);
     cs.slice(0,5).forEach(q=>{
-      const lenBoost=q.len>=6?1.25:q.len>=4?1.12:1,occBoost=clamp(Math.log2(q.occ+1)/2,0.5,1.35),sampleConfidence=clamp(q.occ/7,0.35,1),localW=lenBoost*occBoost*sampleConfidence,uniq=[...new Set(q.next)];
+      const lenBoost=q.len>=6?1.25:q.len>=4?1.12:1,occBoost=clamp(Math.log2(q.occ+1)/2,0.5,1.35),sampleConfidence=clamp(q.occ/7,0.35,1),fallbackPenalty=fallback?0.32:1,localW=lenBoost*occBoost*sampleConfidence*fallbackPenalty,uniq=[...new Set(q.next)];
       uniq.forEach(n=>{scores[idx(n)]+=localW/Math.max(1,uniq.length)});
     });
     const total=scores.reduce((x,y)=>x+y,0);
