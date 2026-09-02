@@ -34,6 +34,7 @@
 </section>
 
 <section class="card wide"><div class="head"><h2><span data-i18n="latest_results">Últimos resultados</span></h2><div class="head-right"><button class="helpBtn" type="button" data-help="latest_results" aria-label="Help">?</button><select id="tol"><option value="1">±1</option><option value="2">±2</option><option value="3" selected>±3</option><option value="4">±4</option><option value="5">±5</option><option value="6">±6</option><option value="7">±7</option><option value="8">±8</option><option value="9">±9</option></select></div><div id="history" class="scrollbox"></div><div class="history-actions"><button class="btn" id="clear"><span data-i18n="clear_history">Borrar historial</span></button></div></section>
+<section class="card wide"><div class="head"><h2><span data-i18n="performance_summary">Rendimiento</span></h2></div><div class="chartstats"><div class="chartstat"><span><span data-i18n="win_rate"></span></span><b id="chartRate">—</b></div><div class="chartstat"><span><span data-i18n="baseline"></span></span><b id="chartBase">—</b></div><div class="chartstat"><span><span data-i18n="edge"></span></span><b id="chartEdge">—</b></div><div class="chartstat"><span><span data-i18n="evaluated"></span></span><b id="chartEval">0</b></div><div class="chartstat"><span><span data-i18n="last_20"></span></span><b id="chartRecent">—</b></div></div></section>
 <section class="card"><div class="head"><h2><span data-i18n="recent_jumps">Saltos recientes</span></h2><button class="helpBtn" type="button" data-help="recent_jumps" aria-label="Help">?</button></div><div id="jumps" class="scrollbox"></div></section>
 <section class="card"><div class="head"><h2><span data-i18n="recent_directions">Direcciones recientes</span></h2><button class="helpBtn" type="button" data-help="recent_directions" aria-label="Help">?</button></div><div id="dirs" class="scrollbox"></div></section>
 
@@ -53,10 +54,8 @@
 <section class="card"><div class="head"><h2><span data-i18n="prediction_history">Historial de predicciones</span></h2><button class="helpBtn" type="button" data-help="prediction_history" aria-label="Help">?</button></div><div id="predHistory" class="rows"></div></section>
 
 <section class="card wide"><div class="head"><h2><span data-i18n="performance_tolerance">Rendimiento ± tolerancia</span></h2><div class="head-right"><button class="helpBtn" type="button" data-help="performance_tolerance" aria-label="Help">?</button><div style="display:flex;gap:8px;align-items:center"><span class="muted"><span data-i18n="window"></span></span><select id="chartWindow"><option value="30">30</option><option value="60" selected>60</option><option value="120">120</option></select></div></div>
-<div class="chartstats"><div class="chartstat"><span><span data-i18n="win_rate"></span></span><b id="chartRate">—</b></div><div class="chartstat"><span><span data-i18n="baseline"></span></span><b id="chartBase">—</b></div><div class="chartstat"><span><span data-i18n="edge"></span></span><b id="chartEdge">—</b></div><div class="chartstat"><span><span data-i18n="evaluated"></span></span><b id="chartEval">0</b></div><div class="chartstat"><span><span data-i18n="last_20"></span></span><b id="chartRecent">—</b></div></div>
 <div class="chartwrap"><canvas id="chart"></canvas></div></section>
 </div>
-<div class="foot"><span data-i18n="footer"></span></div>
 </div>
 
 <div id="helpModal" class="helpModal" hidden aria-hidden="true"><div class="helpOverlay" data-help-close></div><div class="helpDialog" role="dialog" aria-modal="true" aria-labelledby="helpTitle"><div class="helpDialogHead"><h3 id="helpTitle">?</h3><button class="helpClose" type="button" data-help-close aria-label="Close">×</button></div><div id="helpBody" class="helpBody"></div></div></div>
