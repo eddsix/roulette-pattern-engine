@@ -1,7 +1,7 @@
 
 (()=>{
 'use strict';
-const VERSION='15.3.3', KEY='roulettePatternLab.v15.2', THEME_KEY='roulettePatternLab.theme';
+const VERSION='15.3.4', KEY='roulettePatternLab.v15.2', THEME_KEY='roulettePatternLab.theme';
 const FAMILIES=['sequence','jump','joint','pair','transition'];
 const LANG_KEY='roulettePatternLab.language';
 const LANGS=['en','zh','hi','es','fr','ar','bn','pt'];
@@ -238,7 +238,9 @@ function render(){
   $('jumps').innerHTML=transitions.slice(-80).reverse().map(x=>`<span class="chip">${x.j>=0?'+':''}${x.j}</span>`).join('')||'<span class="muted">—</span>';
   $('dirs').innerHTML=transitions.slice(-80).reverse().map(x=>`<span class="chip">${x.d}</span>`).join('')||'<span class="muted">—</span>';
   $('tol').value=String(tol);
-  if(!p){renderEmpty(h);drawChart();return}
+  const aView=p?.adaptive||adaptive(h,tol);
+  if(!p){renderEmpty(h);}
+  else {
   const tg=$('target');tg.textContent=p.target==null?'—':p.target;tg.className='target '+(p.target==null?'black':col(p.target));$('prob').textContent=p.target==null?'—':(p.prob*100).toFixed(2)+'%';
   const sm=p.signal==='HIGH'?t('strong_signal'):p.signal==='LOW'?t('weak_signal'):t('no_edge');$('signal').textContent=sm;$('signal').className='signal '+(p.signal==='HIGH'?'high':p.signal==='LOW'?'low':'none');
   $('predDir').textContent=p.target==null?t('direction_empty'):tf('direction_fmt',{d:p.predDir,cw:(p.cw*100).toFixed(1),ccw:(p.ccw*100).toFixed(1)});$('predJump').textContent=p.target==null?t('jump_empty'):tf('jump_fmt',{j:(p.jump>=0?'+':'')+p.jump});$('zone').textContent=p.target==null?t('no_zone'):neigh(p.target,tol).join(' · ');
@@ -247,9 +249,10 @@ function render(){
   $('robustEdge').textContent=fmtPP(p.robustEdge);$('consensus').textContent=p.consensusCount+'/'+p.activeModels;$('stability').textContent=Math.round(p.stability*100)+'/100';
   $('ranking').innerHTML=p.ranking.slice(0,3).map((x,i)=>`<div class="rank"><div class="ranktop"><span>#${i+1} · ${x.n}${x.support?` · ${x.support} ${t('support')}`:''}</span><b>${(x.p*100).toFixed(2)}%</b></div><div class="bar"><i style="width:${Math.max(2,100*x.p/p.ranking[0].p)}%"></i></div></div>`).join('');
   $('alerts').innerHTML=[...p.seq,...p.joint,...p.jumps].slice(0,7).map(q=>`<div class="alert"><b>${q.type==='sequence'?t('strong_family'):q.type==='joint'?t('joint_family'):t('jump_family')}</b><br>${esc(q.key).replaceAll(',',' → ')} · ${q.occ} ${t('matches')} · ${t('next')}: ${q.next.join(', ')}</div>`).join('')||`<span class="muted">${t('no_repeated')}</span>`;
-  $('weights').innerHTML=FAMILIES.map(k=>{const v=p.adaptive.weights[k],q=p.adaptive.perf[k];return `<div class="weight"><span class="muted">${t('families.'+k)}</span><br><b>${v.toFixed(2)}×</b><div class="muted">${q.n} ${t('tests')} · ±${tol}: ${pct(q.hit,q.n)} · ${t('edge')} ${q.n?fmtPP(q.edge):'—'} · ${t('recently')} ${q.n?fmtPP(q.recentEdge):'—'} · ${t('robust_edge').toLowerCase()} ${q.n?fmtPP(q.robustEdge):'—'}</div></div>`}).join('');
+  $('weights').innerHTML=FAMILIES.map(k=>{const v=aView.weights[k],q=aView.perf[k];return `<div class="weight"><span class="muted">${t('families.'+k)}</span><br><b>${v.toFixed(2)}×</b><div class="muted">${q.n} ${t('tests')} · ±${tol}: ${pct(q.hit,q.n)} · ${t('edge')} ${q.n?fmtPP(q.edge):'—'} · ${t('recently')} ${q.n?fmtPP(q.recentEdge):'—'} · ${t('robust_edge').toLowerCase()} ${q.n?fmtPP(q.robustEdge):'—'}</div></div>`}).join('');
   $('weightSummary').textContent=t('weight_summary');
-  $('learningSummary').textContent=FAMILIES.map(f=>{const q=p.adaptive.perf[f];return q.n?`${t('families.'+f)}: ${q.n} ${t('tests')}, ${fmtPP(q.edge)} ${t('historical')}, ${fmtPP(q.recentEdge)} ${t('recently')}, ${Math.round(q.stability*100)}${t('stability100')}`:`${t('families.'+f)}: ${t('no_sample')}`}).join(' · ');
+  $('learningSummary').textContent=FAMILIES.map(f=>{const q=aView.perf[f];return q.n?`${t('families.'+f)}: ${q.n} ${t('tests')}, ${fmtPP(q.edge)} ${t('historical')}, ${fmtPP(q.recentEdge)} ${t('recently')}, ${Math.round(q.stability*100)}${t('stability100')}`:`${t('families.'+f)}: ${t('no_sample')}`}).join(' · ');
+  }
   $('predHistory').innerHTML=bt.rows.slice(-60).reverse().map(x=>{const pr=x.prediction,win=dist(pr.target,x.actual)<=tol,j=pr.jump==null?'—':`${pr.jump>=0?'+':''}${pr.jump}`;return `<div class="prow"><b>#${x.spinIndex}</b><span>${pr.target} → ${x.actual}</span><span>${j} ${t('pockets')}</span><span>${(pr.prob*100).toFixed(2)}%</span><span>${pr.confidence}/100</span><b class="${win?'win':'loss'}">${win?t('win'):t('loss')}</b></div>`}).join('')||'—';
   const base=100*baseline(tol), recentRows=bt.rows.slice(-20),recentRate=recentRows.length?100*recentRows.filter(x=>dist(x.prediction.target,x.actual)<=tol).length/recentRows.length:null,chartRows=bt.rows.slice(-Number(S.settings.chartWindow)),chartRate=chartRows.length?100*chartRows.filter(x=>dist(x.prediction.target,x.actual)<=tol).length/chartRows.length:null;
   $('chartRate').textContent=chartRate==null?'—':chartRate.toFixed(1)+'%';$('chartBase').textContent=base.toFixed(1)+'%';$('chartEdge').textContent=chartRate==null?'—':((chartRate-base>=0?'+':'')+(chartRate-base).toFixed(1)+' pp');$('chartEval').textContent=chartRows.length;$('chartRecent').textContent=recentRate==null?'—':recentRate.toFixed(1)+'%';
