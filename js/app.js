@@ -1,7 +1,7 @@
 
 (()=>{
 'use strict';
-const VERSION='15.3.2', KEY='roulettePatternLab.v15.2', THEME_KEY='roulettePatternLab.theme';
+const VERSION='15.3.3', KEY='roulettePatternLab.v15.2', THEME_KEY='roulettePatternLab.theme';
 const FAMILIES=['sequence','jump','joint','pair','transition'];
 const LANG_KEY='roulettePatternLab.language';
 const LANGS=['en','zh','hi','es','fr','ar','bn','pt'];
@@ -197,6 +197,8 @@ function model(h,tol){
   const usefulEvidence=hasEvidence && (relativeSpread>0.08 || topLift>1.08);
   if(!usefulEvidence){cache.model.set(key,null);return null}
   const probs=calibrateRelative(score),ranked=score.map((v,n)=>({n,v,p:probs[n],support:support[n]})).sort((a,b)=>b.p-a.p||b.support-a.support),top=ranked[0],second=ranked[1],lead=top.p-second.p;
+  // Do not issue a prediction when the top relative ensemble score is below 5%.
+  if(!top || top.p<0.05){cache.model.set(key,null);return null}
   let cw=0,ccw=0;const last=h.at(-1);for(const x of ranked){const j=jmp(last,x.n);if(j>0)cw+=x.p;else if(j<0)ccw+=x.p}const active=FAMILIES.filter(f=>a.perf[f].n>0).length;
   const familyRobust=FAMILIES.map(f=>a.perf[f].n?a.perf[f].robustEdge:0).filter(x=>Number.isFinite(x)),avgRobust=familyRobust.length?familyRobust.reduce((s,x)=>s+x,0)/familyRobust.length:0;
   const familyRecent=FAMILIES.map(f=>a.perf[f].n?a.perf[f].recentEdge:0).filter(x=>Number.isFinite(x)),avgRecent=familyRecent.length?familyRecent.reduce((s,x)=>s+x,0)/familyRecent.length:0;
