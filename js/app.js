@@ -1,7 +1,7 @@
 
 (()=>{
 'use strict';
-const VERSION='15.3', KEY='roulettePatternLab.v15.2', THEME_KEY='roulettePatternLab.theme';
+const VERSION='15.3.1', KEY='roulettePatternLab.v15.2', THEME_KEY='roulettePatternLab.theme';
 const FAMILIES=['sequence','jump','joint','pair','transition'];
 const LANG_KEY='roulettePatternLab.language';
 const LANGS=['en','zh','hi','es','fr','ar','bn','pt'];
@@ -91,6 +91,7 @@ function familyDistribution(h,f){
   const cs=candidates(h,f),scores=Array(37).fill(0);
   let evidence=cs;
   if(!evidence.length)evidence=candidates(h,f,1);
+  if(!evidence.length)return Array(37).fill(0);
   evidence.slice(0,5).forEach(q=>{
     const relaxed=!cs.length;
     const lenBoost=q.len>=6?1.25:q.len>=4?1.12:1;
@@ -185,6 +186,8 @@ function model(h,tol){
   for(const f of FAMILIES){const w=a.weights[f],distF=familyScores[f],has=distF.some(x=>x>0);if(!has)continue;for(let n=0;n<37;n++){score[n]+=w*distF[n];if(distF[n]>0)support[n]+=w}}
   Object.entries(a.meta).forEach(([k,m])=>{if(m.n<6||m.robustEdge<=0)return;const [fa,fb]=k.split('+'),t=familyTargets[fa];if(t!=null&&familyTargets[fb]===t){score[idx(t)]+=clamp(m.robustEdge*16,0.03,0.55);support[idx(t)]+=0.5}});
   const recent=h.slice(-10),cnt=new Map();recent.forEach(n=>cnt.set(n,(cnt.get(n)||0)+1));for(let n=0;n<37;n++){const c=cnt.get(n)||0;if(c>=3)score[n]*=(c===3?0.90:c===4?0.82:0.72)}
+  const hasEvidence=FAMILIES.some(f=>familyScores[f].some(x=>x>0));
+  if(!hasEvidence){cache.model.set(key,null);return null}
   const probs=calibrateRelative(score),ranked=score.map((v,n)=>({n,v,p:probs[n],support:support[n]})).sort((a,b)=>b.p-a.p||b.support-a.support),top=ranked[0],second=ranked[1],lead=top.p-second.p;
   let cw=0,ccw=0;const last=h.at(-1);for(const x of ranked){const j=jmp(last,x.n);if(j>0)cw+=x.p;else if(j<0)ccw+=x.p}const active=FAMILIES.filter(f=>a.perf[f].n>0).length;
   const familyRobust=FAMILIES.map(f=>a.perf[f].n?a.perf[f].robustEdge:0).filter(x=>Number.isFinite(x)),avgRobust=familyRobust.length?familyRobust.reduce((s,x)=>s+x,0)/familyRobust.length:0;
