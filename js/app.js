@@ -1,7 +1,7 @@
 
 (()=>{
 'use strict';
-const VERSION='15.3.4', KEY='roulettePatternLab.v15.2', THEME_KEY='roulettePatternLab.theme';
+const VERSION='15.3.5', KEY='roulettePatternLab.v15.2', THEME_KEY='roulettePatternLab.theme';
 const FAMILIES=['sequence','jump','joint','pair','transition'];
 const LANG_KEY='roulettePatternLab.language';
 const LANGS=['en','zh','hi','es','fr','ar','bn','pt'];
@@ -253,12 +253,30 @@ function render(){
   $('weightSummary').textContent=t('weight_summary');
   $('learningSummary').textContent=FAMILIES.map(f=>{const q=aView.perf[f];return q.n?`${t('families.'+f)}: ${q.n} ${t('tests')}, ${fmtPP(q.edge)} ${t('historical')}, ${fmtPP(q.recentEdge)} ${t('recently')}, ${Math.round(q.stability*100)}${t('stability100')}`:`${t('families.'+f)}: ${t('no_sample')}`}).join(' · ');
   }
+  // Session statistics must remain visible even when there is no current prediction.
+  // They are derived from the available history/backtest state, not from the current prediction object.
+  $('weights').innerHTML=FAMILIES.map(k=>{const v=aView.weights[k],q=aView.perf[k];return `<div class="weight"><span class="muted">${t('families.'+k)}</span><br><b>${v.toFixed(2)}×</b><div class="muted">${q.n} ${t('tests')} · ±${tol}: ${pct(q.hit,q.n)} · ${t('edge')} ${q.n?fmtPP(q.edge):'—'} · ${t('recently')} ${q.n?fmtPP(q.recentEdge):'—'} · ${t('robust_edge').toLowerCase()} ${q.n?fmtPP(q.robustEdge):'—'}</div></div>`}).join('');
+  $('weightSummary').textContent=t('weight_summary');
+  $('learningSummary').textContent=FAMILIES.map(f=>{const q=aView.perf[f];return q.n?`${t('families.'+f)}: ${q.n} ${t('tests')}, ${fmtPP(q.edge)} ${t('historical')}, ${fmtPP(q.recentEdge)} ${t('recently')}, ${Math.round(q.stability*100)}${t('stability100')}`:`${t('families.'+f)}: ${t('no_sample')}`}).join(' · ');
+  $('evals').textContent=bt.n;
   $('predHistory').innerHTML=bt.rows.slice(-60).reverse().map(x=>{const pr=x.prediction,win=dist(pr.target,x.actual)<=tol,j=pr.jump==null?'—':`${pr.jump>=0?'+':''}${pr.jump}`;return `<div class="prow"><b>#${x.spinIndex}</b><span>${pr.target} → ${x.actual}</span><span>${j} ${t('pockets')}</span><span>${(pr.prob*100).toFixed(2)}%</span><span>${pr.confidence}/100</span><b class="${win?'win':'loss'}">${win?t('win'):t('loss')}</b></div>`}).join('')||'—';
   const base=100*baseline(tol), recentRows=bt.rows.slice(-20),recentRate=recentRows.length?100*recentRows.filter(x=>dist(x.prediction.target,x.actual)<=tol).length/recentRows.length:null,chartRows=bt.rows.slice(-Number(S.settings.chartWindow)),chartRate=chartRows.length?100*chartRows.filter(x=>dist(x.prediction.target,x.actual)<=tol).length/chartRows.length:null;
   $('chartRate').textContent=chartRate==null?'—':chartRate.toFixed(1)+'%';$('chartBase').textContent=base.toFixed(1)+'%';$('chartEdge').textContent=chartRate==null?'—':((chartRate-base>=0?'+':'')+(chartRate-base).toFixed(1)+' pp');$('chartEval').textContent=chartRows.length;$('chartRecent').textContent=recentRate==null?'—':recentRate.toFixed(1)+'%';
   drawChart();
 }
-function renderEmpty(h){$('target').textContent='—';$('target').className='target black';$('prob').textContent='—';$('signal').textContent=h.length<12?t('waiting_data'):t('no_signal');$('signal').className='signal';$('predDir').textContent=t('direction_empty');$('predJump').textContent=t('jump_empty');$('zone').textContent=h.length<12?t('need_spins'):'—';$('confidence').textContent='—';$('edge').textContent='—';$('support').textContent='—';$('qualityMini').textContent='—';$('robustEdge').textContent='—';$('consensus').textContent='—';$('stability').textContent='—';$('quality').textContent='—';$('qualityFill').style.width='0%';$('qualitySummary').textContent='';['qConsensus','qStability','qRobust','qSample','qRecent'].forEach(id=>$(id).textContent='—');$('ranking').innerHTML='';$('alerts').innerHTML=h.length<12?t('need_spins')+'.':'—';$('weights').innerHTML=FAMILIES.map(k=>`<div class="weight"><span class="muted">${t('families.'+k)}</span><br><b>—</b><div class="muted">${t('no_sample')}</div></div>`).join('');$('learningSummary').textContent='';$('predHistory').innerHTML='—';}
+function renderEmpty(h){
+  // No prediction is a state of the prediction panel only.
+  // Historical statistics, learning diagnostics, adaptive weights, prediction history and chart remain visible.
+  $('target').textContent='—';$('target').className='target black';$('prob').textContent='—';
+  $('signal').textContent=h.length<12?t('waiting_data'):t('no_signal');$('signal').className='signal none';
+  $('predDir').textContent=t('direction_empty');$('predJump').textContent=t('jump_empty');
+  $('zone').textContent=h.length<12?t('need_spins'):'—';$('confidence').textContent='—';
+  $('edge').textContent='—';$('support').textContent='—';$('qualityMini').textContent='—';
+  $('robustEdge').textContent='—';$('consensus').textContent='—';$('stability').textContent='—';
+  $('quality').textContent='—';$('qualityFill').style.width='0%';$('qualitySummary').textContent=t('quality_summary');
+  ['qConsensus','qStability','qRobust','qSample','qRecent'].forEach(id=>$(id).textContent='—');
+  $('ranking').innerHTML='';$('alerts').innerHTML=h.length<12?t('need_spins')+'.':'—';
+}
 function drawChart(){
   const c=$('chart'),d=devicePixelRatio||1,w=c.clientWidth||500,hh=c.clientHeight||240;c.width=w*d;c.height=hh*d;const x=c.getContext('2d');x.setTransform(d,0,0,d,0,0);x.clearRect(0,0,w,hh);const rows=S.predictions.filter(r=>r?.prediction?.target!=null),tol=S.settings.tol,win=Number(S.settings.chartWindow),slice=rows.slice(-win);if(!slice.length){x.fillStyle=getComputedStyle(document.body).getPropertyValue('--muted');x.font='12px system-ui';x.fillText(t('no_predictions'),12,25);return}
   const vals=[];let hits=0;const base=100*baseline(tol);slice.forEach(r=>{if(dist(r.prediction.target,r.actual)<=tol)hits++;vals.push(100*hits/(vals.length+1))});const color=getComputedStyle(document.body).getPropertyValue('--accent');x.strokeStyle=color;x.lineWidth=2;x.beginPath();vals.forEach((y,i,a)=>{const xx=8+i*(w-16)/Math.max(1,a.length-1),yy=hh-16-y*(hh-30)/100;i?x.lineTo(xx,yy):x.moveTo(xx,yy)});x.stroke();x.strokeStyle=getComputedStyle(document.body).getPropertyValue('--muted');x.lineWidth=1;x.setLineDash([4,4]);const by=hh-16-base*(hh-30)/100;x.beginPath();x.moveTo(8,by);x.lineTo(w-8,by);x.stroke();x.setLineDash([]);
