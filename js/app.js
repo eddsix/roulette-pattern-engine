@@ -1,7 +1,7 @@
 
 (()=>{
 'use strict';
-const VERSION='15.5.0', KEY='roulettePatternLab.v15.2', THEME_KEY='roulettePatternLab.theme';
+const VERSION='15.6.0', KEY='roulettePatternLab.v15.2', THEME_KEY='roulettePatternLab.theme';
 const FAMILIES=['sequence','jump','joint','pair','transition'];
 const LANG_KEY='roulettePatternLab.language';
 const LANGS=['en','zh','hi','es','fr','ar','bn','pt'];
@@ -70,44 +70,52 @@ function robustEdgeWilson(hit,n,tol){
   return center-half-baseline(tol);
 }
 function getTrans(h){const k=keyArr(h);if(cache.trans.has(k))return cache.trans.get(k);const a=[];for(let i=1;i<h.length;i++)a.push({from:h[i-1],to:h[i],j:jmp(h[i-1],h[i]),d:dir(h[i-1],h[i])});cache.trans.set(k,a);return a}
-function candidates(h,f,minOcc=2){
-  const key=hashHistory(h,0)+'|'+f+'|'+minOcc;if(cache.candidates.has(key))return cache.candidates.get(key);
+function candidates(h,f,minOcc=1){
+  const key=hashHistory(h,0)+'|'+f+'|'+minOcc;
+  if(cache.candidates.has(key))return cache.candidates.get(key);
   if(h.length<12){cache.candidates.set(key,[]);return []}
   const out=[];
+  const addGroup=(sig,len,next,lastIndex)=>{if(next.length>=minOcc)out.push({type:f,len,key:sig,occ:next.length,next,lastIndex})};
   const suffixCandidates=(arr,minLen,maxLen,mapper)=>{
     const limit=Math.min(maxLen,arr.length-1);
     for(let l=minLen;l<=limit;l++){
       const sig=mapper(arr.slice(-l)),groups=new Map();
       for(let i=0;i+l<arr.length;i++){
         const k=mapper(arr.slice(i,i+l));
-        let next=groups.get(k);if(!next){next=[];groups.set(k,next)}next.push(arr[i+l]);
+        let g=groups.get(k);if(!g){g=[];groups.set(k,g)}
+        g.push({value:arr[i+l],index:i+l});
       }
-      const next=groups.get(sig)||[];
-      if(next.length>=minOcc)out.push({type:f,len:l,key:sig,occ:next.length,next});
+      const g=groups.get(sig)||[];
+      addGroup(sig,l,g.map(x=>x.value),g.length?g.at(-1).index:-1);
     }
   };
-  if(f==='sequence') suffixCandidates(h,2,8,a=>a.join(','));
-  else if(f==='jump') suffixCandidates(getTrans(h).map(x=>x.j),2,6,a=>a.join(','));
-  else if(f==='joint') suffixCandidates(getTrans(h).map(x=>x.j+':'+x.d),2,6,a=>a.join('|'));
+  if(f==='sequence')suffixCandidates(h,2,8,a=>a.join(','));
+  else if(f==='jump')suffixCandidates(getTrans(h).map(x=>x.j),2,6,a=>a.join(','));
+  else if(f==='joint')suffixCandidates(getTrans(h).map(x=>x.j+':'+x.d),2,6,a=>a.join('|'));
   else if(f==='pair'){
-    const sig=h.slice(-2).join(','),next=[];for(let i=0;i+2<h.length;i++)if(h[i]+','+h[i+1]===sig)next.push(h[i+2]);if(next.length>=minOcc)out.push({type:f,len:2,key:sig,occ:next.length,next});
+    const sig=h.slice(-2).join(','),next=[];
+    for(let i=0;i+2<h.length;i++)if(h[i]===h.at(-2)&&h[i+1]===h.at(-1))next.push({value:h[i+2],index:i+2});
+    addGroup(sig,2,next.map(x=>x.value),next.length?next.at(-1).index:-1);
   }else{
-    const last=h.at(-1),sig=String(last),next=[];for(let i=0;i<h.length-1;i++)if(h[i]===last)next.push(h[i+1]);if(next.length>=minOcc)out.push({type:f,len:1,key:sig,occ:next.length,next});
+    const last=h.at(-1),sig=String(last),next=[];
+    for(let i=0;i<h.length-1;i++)if(h[i]===last)next.push({value:h[i+1],index:i+1});
+    addGroup(sig,1,next.map(x=>x.value),next.length?next.at(-1).index:-1);
   }
-  const r=out.sort((a,b)=>b.len-a.len||b.occ-a.occ);cache.candidates.set(key,r);return r;
+  const r=out.sort((a,b)=>b.len-a.len||b.occ-a.occ||b.lastIndex-a.lastIndex);
+  cache.candidates.set(key,r);return r;
 }
 
 function jumpDestination(from,j){return wheel[(idx(from)+j+37*4)%37]}
 function familyDistribution(h,f){
-  const cs=candidates(h,f),scores=Array(37).fill(0);let evidence=cs;
-  if(!evidence.length)evidence=candidates(h,f,1);
+  const evidence=candidates(h,f,1),scores=Array(37).fill(0);
   if(!evidence.length)return scores;
-  const last=h.at(-1),relaxed=!cs.length;
-  evidence.slice(0,5).forEach(q=>{
-    const lenBoost=q.len>=6?1.25:q.len>=4?1.12:1;
-    const occBoost=clamp(Math.log2(q.occ+1)/2,0.5,1.35);
-    const sampleConfidence=clamp(q.occ/7,0.35,1);
-    const localW=lenBoost*occBoost*sampleConfidence*(relaxed?0.42:1);
+  const last=h.at(-1),N=h.length;
+  evidence.slice(0,8).forEach(q=>{
+    const lenBoost=q.len>=6?1.30:q.len>=4?1.16:q.len>=3?1.08:1;
+    // Repeated evidence matters more, but one-off matches remain available as weak evidence.
+    const occBoost=q.occ/(q.occ+3);
+    const recency=q.lastIndex>=0?0.78+0.42*(q.lastIndex/Math.max(1,N-1)):0.78;
+    const localW=lenBoost*occBoost*recency;
     const counts=new Map();
     q.next.forEach(raw=>{
       const n=f==='jump'?jumpDestination(last,raw):raw;
@@ -118,7 +126,25 @@ function familyDistribution(h,f){
   });
   const total=scores.reduce((x,y)=>x+y,0);return total?scores.map(x=>x/total):Array(37).fill(0);
 }
-function familyTarget(h,f){const key=hashHistory(h,0)+'|'+f;if(cache.familyTarget.has(key))return cache.familyTarget.get(key);const d=familyDistribution(h,f);let best=0;for(let n=1;n<37;n++)if(d[n]>d[best])best=n;const result=d.some(x=>x>0)?best:null;cache.familyTarget.set(key,result);return result}
+function directionContext(h){
+  const out=Array(37).fill(1),last=h.at(-1);if(last==null)return out;
+  let cw=0,ccw=0,same=0;
+  for(let i=0;i<h.length-1;i++)if(h[i]===last){const d=dir(h[i],h[i+1]);if(d==='CW')cw++;else if(d==='CCW')ccw++;else same++;}
+  const total=cw+ccw+same;if(!total)return out;
+  const pcw=(cw+1)/(total+2),pccw=(ccw+1)/(total+2),psame=(same+1)/(total+3);
+  for(let n=0;n<37;n++){
+    const d=jmp(last,n);out[n]=d===0?1+psame: d>0?0.55+1.45*pcw:0.55+1.45*pccw;
+  }
+  const mean=out.reduce((a,b)=>a+b,0)/37;return out.map(v=>v/mean);
+}
+function familyTarget(h,f){
+  const key=hashHistory(h,0)+'|'+f;
+  if(cache.familyTarget.has(key))return cache.familyTarget.get(key);
+  const d=familyDistribution(h,f);let best=0;
+  for(let n=1;n<37;n++)if(d[n]>d[best])best=n;
+  const result=d.some(x=>x>0)?best:null;cache.familyTarget.set(key,result);return result;
+}
+
 function walkForwardRows(h,f,tol,start=Math.max(12,h.length-160),end=h.length){
   const key=hashHistory(h,tol)+'|wf|'+f+'|'+start+'|'+end;if(cache.walkForward?.has(key))return cache.walkForward.get(key);
   const rows=[];const s=Math.max(12,start),e=Math.min(end,h.length);
@@ -175,9 +201,27 @@ function model(h,tol){
   const key=hashHistory(h,tol);if(cache.model.has(key))return cache.model.get(key);if(h.length<12)return null;
   const a=adaptive(h,tol),familyScores={},familyTargets={};
   for(const f of FAMILIES){familyScores[f]=familyDistribution(h,f);familyTargets[f]=familyTarget(h,f)}
-  const score=Array(37).fill(0.0001),support=Array(37).fill(0);
-  for(const f of FAMILIES){const w=a.weights[f],distF=familyScores[f],has=distF.some(x=>x>0);if(!has)continue;for(let n=0;n<37;n++){score[n]+=w*distF[n];if(distF[n]>0)support[n]+=w}}
-  Object.entries(a.meta).forEach(([k,m])=>{if(m.n<6||m.robustEdge<=0)return;const [fa,fb]=k.split('+'),t=familyTargets[fa];if(t!=null&&familyTargets[fb]===t){score[idx(t)]+=clamp(m.robustEdge*16,0.03,0.55);support[idx(t)]+=0.5}});
+  const score=Array(37).fill(0.00001),support=Array(37).fill(0);
+  let strongFamilyEvidence=false;
+  for(const f of FAMILIES){
+    const w=a.weights[f],distF=familyScores[f],has=distF.some(x=>x>0);
+    if(!has)continue;
+    const repeated=candidates(h,f,2).length>0;
+    if(repeated)strongFamilyEvidence=true;
+    const evidenceScale=repeated?1:0.22;
+    for(let n=0;n<37;n++){score[n]+=w*evidenceScale*distF[n];if(distF[n]>0)support[n]+=w*evidenceScale*distF[n];}
+  }
+  // Direction is a contextual modifier, not a sixth backtested family.
+  // It tilts the complete ensemble toward the historically preferred wheel direction
+  // from the current number, while never creating evidence on its own.
+  const dctx=directionContext(h);
+  for(let n=0;n<37;n++)score[n]*=dctx[n];
+
+  Object.entries(a.meta).forEach(([k,m])=>{
+    if(m.n<6||m.robustEdge<=0)return;
+    const [fa,fb]=k.split('+'),t=familyTargets[fa];
+    if(t!=null&&familyTargets[fb]===t){score[idx(t)]+=clamp(m.robustEdge*10,0.015,0.30);support[idx(t)]+=0.5;}
+  });
   const recent=h.slice(-10),cnt=new Map();recent.forEach(n=>cnt.set(n,(cnt.get(n)||0)+1));for(let n=0;n<37;n++){const c=cnt.get(n)||0;if(c>=3)score[n]*=(c===3?0.90:c===4?0.82:0.72)}
   const hasEvidence=FAMILIES.some(f=>familyScores[f].some(x=>x>0));
   // A fallback can technically produce evidence even when the combined
@@ -187,7 +231,7 @@ function model(h,tol){
   const meanScore=score.reduce((s,v)=>s+v,0)/score.length;
   const relativeSpread=meanScore>0?(maxScore-minScore)/meanScore:0;
   const topLift=meanScore>0?maxScore/meanScore:1;
-  const usefulEvidence=hasEvidence && (relativeSpread>0.08 || topLift>1.08);
+  const usefulEvidence=hasEvidence && strongFamilyEvidence && (relativeSpread>0.08 || topLift>1.08);
   if(!usefulEvidence){cache.model.set(key,null);return null}
   const probs=calibrateRelative(score),ranked=score.map((v,n)=>({n,v,p:probs[n],support:support[n]})).sort((a,b)=>b.p-a.p||b.support-a.support),top=ranked[0],second=ranked[1],lead=top.p-second.p;
   // Do not issue a prediction when the top relative ensemble score is below 5%.
@@ -202,7 +246,7 @@ function model(h,tol){
   const quality=Math.round(clamp(consensus*28+stability*22+clamp((robustEdge+0.03)/0.08,0,1)*25+clamp((Math.log1p(Math.max(0,top.support))/3),0,1)*10+recentQuality*15,0,100));
   const signal=confidence>=72&&robustEdge>=0.008&&quality>=70?'HIGH':'LOW';
   const target=ranked.length?top.n:null,jump=target==null?null:jmp(last,target);
-  const result={target,prob:target==null?0:top.p,zoneProbability:target==null?0:zoneProbability,ranking:ranked.slice(0,12),predDir:cw>=ccw?'CW':'CCW',cw,ccw,adaptive:a,seq:candidates(h,'sequence').slice(0,4),joint:candidates(h,'joint').slice(0,3),jumps:candidates(h,'jump').slice(0,3),edge,robustEdge,confidence,signal,lead,avgEdge:avgRobust,avgRecent,stability,consensusCount,activeModels:active,jump,quality,familyTargets};
+  const result={target,prob:target==null?0:top.p,zoneProbability:target==null?0:zoneProbability,ranking:ranked.slice(0,12),predDir:cw>=ccw?'CW':'CCW',cw,ccw,adaptive:a,seq:candidates(h,'sequence').slice(0,4),joint:candidates(h,'joint').slice(0,3),jumps:candidates(h,'jump').slice(0,3),edge,robustEdge,confidence,signal,lead,avgEdge:avgRobust,avgRecent,stability,consensusCount,activeModels:active,jump,quality,familyTargets,directionContext:dctx};
   cache.model.set(key,result);if(cache.model.size>CACHE_LIMIT)cache.model.delete(cache.model.keys().next().value);return result;
 }
 
