@@ -1,7 +1,7 @@
 
 (()=>{
 'use strict';
-const VERSION='15.4.1', KEY='roulettePatternLab.v15.2', THEME_KEY='roulettePatternLab.theme';
+const VERSION='15.4.2', KEY='roulettePatternLab.v15.2', THEME_KEY='roulettePatternLab.theme';
 const FAMILIES=['sequence','jump','joint','pair','transition'];
 const LANG_KEY='roulettePatternLab.language';
 const LANGS=['en','zh','hi','es','fr','ar','bn','pt'];
@@ -207,7 +207,7 @@ function model(h,tol){
   const recentQuality=clamp((avgRecent+baseline(tol))/(Math.max(0.001,1-baseline(tol))),0,1),sampleQuality=clamp((a.perf[topSupportFamily(ranked,a,familyTargets,top.n)]?.n||0)/100,0,1);
   const confidence=Math.round(clamp(28+lead*1000+clamp(top.support/Math.max(1,active),0,1)*22+consensus*25+stability*12+clamp(avgRobust*400,-8,20),5,99));
   const quality=Math.round(clamp(consensus*28+stability*22+clamp((robustEdge+0.03)/0.08,0,1)*25+clamp((Math.log1p(Math.max(0,top.support))/3),0,1)*10+recentQuality*15,0,100));
-  const signal=!ranked.length||active<2||confidence<45||edge<0.003||robustEdge<=0?'NONE':confidence>=72&&robustEdge>=0.008&&quality>=70?'HIGH':'LOW';
+  const signal=confidence>=72&&robustEdge>=0.008&&quality>=70?'HIGH':'LOW';
   const target=ranked.length?top.n:null,jump=target==null?null:jmp(last,target);
   const result={target,prob:target==null?0:top.p,zoneProbability:target==null?0:zoneProbability,ranking:ranked.slice(0,12),predDir:cw>=ccw?'CW':'CCW',cw,ccw,adaptive:a,seq:candidates(h,'sequence').slice(0,4),joint:candidates(h,'joint').slice(0,3),jumps:candidates(h,'jump').slice(0,3),edge,robustEdge,confidence,signal,lead,avgEdge:avgRobust,avgRecent,stability,consensusCount,activeModels:active,jump,quality,familyTargets};
   cache.model.set(key,result);if(cache.model.size>CACHE_LIMIT)cache.model.delete(cache.model.keys().next().value);return result;
